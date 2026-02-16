@@ -17,7 +17,7 @@ In this project, you will design and build a video game.  I recommend that you d
 * Decide on a game idea and core goal
 * Game rules and player actions are written or sketched out
 * Main objects (player, obstacles, goals, enemies, etc.) are identified
-* Sketch a simple plan showing how the game will work step-by-step 
+* Write a simple plan in the planning_and_design.txt file showing how the game will work step-by-step 
 
 | Part II: Install Curses and Print Game Elements (15 pts) |
 |----------|
