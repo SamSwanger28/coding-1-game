@@ -7,11 +7,23 @@ Part I: Planning & Design (15 pts)
 
 Game Idea:
 
+The legend of zelda like game 
+
 
 Game Rules:
 
+players can move using wasd or arrow keys
+players can attack using spacebar/smth else
+players can pickup and choose to use new items
 
 Major Game Elements:
 
+weapons like sword hammer axe
+player model
+enemy model
+obstacles
+
 
 Gameplay Process:
+player has to walk around and kill other things without dying
+they get better and better gear and game ends when they die/quit
