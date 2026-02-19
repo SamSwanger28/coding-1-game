@@ -16,12 +16,19 @@ players can move using wasd or arrow keys
 players can attack using spacebar/smth else
 players can pickup and choose to use new items
 
+
 Major Game Elements:
 
 weapons like sword hammer axe
 player model
 enemy model
 obstacles
+
+  'obstacle': "\U0001FAA8 ",# 🪨
+    'sword' : "\U0001f5e1\ufe0f", # 🗡️
+    'axe' : "\U0001fa93", # 🪓
+    'bow' : "\U0001f3f9", # 🏹
+    'empty': "  "
 
 
 Gameplay Process:

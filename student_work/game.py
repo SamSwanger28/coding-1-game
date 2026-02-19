@@ -10,13 +10,14 @@ class Game():
     # Store board dimensions, player/enemy positions, score, energy, collectibles, and icons
     'Board_Width' : 25,
     'Board_Height' : 15,
-    'Obstacle' : [ {'x' : 5, 'y' : 7}, {'x' : 10, 'y' : 3}, {'x' : 15, 'y' : 10}],
+    'Obstacle' : [ {'x' : 5, 'y' : 7}, {'x' : 10, 'y' : 3}, {'x' : 15, 'y' : 10}, {'x' : 20, 'y' : 5}, {'x' : 8, 'y' : 12}, {'x' : 12, 'y' : 8}, {'x' : 18, 'y' : 2}, {'x' : 22, 'y' : 9} ],
 
     # Board pngs
     'obstacle': "\U0001FAA8 ",# 🪨
     'sword' : "\U0001f5e1\ufe0f", # 🗡️
     'axe' : "\U0001fa93", # 🪓
     'bow' : "\U0001f3f9", # 🏹
+    'arrow' : "→", # →
     'empty': "  "
 }
         self.player_data = {       
@@ -39,7 +40,7 @@ class Game():
                 else:
                     row += self.game_data['empty']
             try:
-                stdscr.addstr(y, 0, row)
+                stdscr.addstr(y, 0, row, curses.color_pair(1))
             except curses.error:
                 # Terminal may be too small for the board or unicode width; skip printing
                 pass
