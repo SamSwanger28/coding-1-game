@@ -8,9 +8,9 @@ class Game():
     def __init__(self):
         self.game_data = {
     # Store board dimensions, player/enemy positions, score, energy, collectibles, and icons
-    'Board_Width' : 10,
-    'Board_Height' : 10,
-    # 'Obstacle' : [ {'x' : random.randint(10), 'y' : random.randint(10)},],
+    'Board_Width' : 25,
+    'Board_Height' : 15,
+    'Obstacle' : [ {'x' : 5, 'y' : 7}, {'x' : 10, 'y' : 3}, {'x' : 15, 'y' : 10}],
 
     # Board pngs
     'obstacle': "\U0001FAA8 ",# 🪨
@@ -20,8 +20,10 @@ class Game():
     'empty': "  "
 }
         self.player_data = {       
-            'Player_Start' : (5,5),
+            'Player_Start' : {'x' : 5,'y' : 5},
             'Player_Health' : 5,
+            'Player_Score' : 0,
+            'Player_Icon' : "\U0001F9DD", # 🧝
  }
     
     def draw_board(self,stdscr):
@@ -29,12 +31,25 @@ class Game():
         stdscr.clear()
         for y in range(self.game_data["Board_Height"]):
             row = " "
-            for x in range(self.game_data["Board_Width"]):
-                row += self.game_data.get('empty', '  ')
-            stdscr.addstr(y, 0, row)
+            for x in range(self.game_data['Board_Width']):
+                if self.player_data["Player_Start"]["x"] == x and self.player_data["Player_Start"]["y"] == y:
+                    row += self.player_data['Player_Icon']
+                elif any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle']):
+                    row += self.game_data['obstacle']
+                else:
+                    row += self.game_data['empty']
+            try:
+                stdscr.addstr(y, 0, row)
+            except curses.error:
+                # Terminal may be too small for the board or unicode width; skip printing
+                pass
         stdscr.refresh()
-        time.sleep(0.1)
-
+        # Wait for a keypress so the board remains visible until user presses a key
+        while True:
+            key = stdscr.getkey()
+            if key.lower() == 'q':
+                break
+        stdscr.nodelay(False)
 class Enemy():
     def __init__(self):
         self.enemy_data = {
@@ -44,4 +59,14 @@ class Enemy():
 
 adventure_game = Game()
 # Use curses.wrapper with a callable that accepts the stdscr argument.
-curses.wrapper(adventure_game.draw_board)
+import sys, traceback
+
+try:
+    curses.wrapper(adventure_game.draw_board)
+except Exception:
+    try:
+        curses.endwin()
+    except Exception:
+        pass
+    traceback.print_exc()
+    sys.exit(1)
