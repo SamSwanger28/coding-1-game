@@ -51,6 +51,38 @@ class Game():
             if key.lower() == 'q':
                 break
         stdscr.nodelay(False)
+
+    def move_player(self, direction):
+        # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
+        new_x = self.player_data["Player_Start"]["x"]
+        new_y = self.player_data["Player_Start"]["y"]
+        if direction == 'w':  # Up
+            new_y -= 1
+        elif direction == 's':  # Down
+            new_y += 1
+        elif direction == 'a':  # Left
+            new_x -= 1
+        elif direction == 'd':  # Right
+            new_x += 1
+
+    def check_collision(self, x, y):
+        pass
+
+    def update_score(self, points):
+        self.player_data["Player_Score"] += points
+
+    def check_game_over(self):
+        if self.player_data["Player_Health"] <= 0:
+            return True
+        return False
+
+    def spawn_collectible(self):
+        pass
+
+    def welcome_message(self):
+        print("Welcome to the Adventure Game!")
+        print("Use WASD keys to move, and avoid obstacles. Press 'q' to quit.") 
+
 class Enemy():
     def __init__(self):
         self.enemy_data = {
