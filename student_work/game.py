@@ -1,7 +1,6 @@
 # Write your game here
 import curses
 import random
-import time
 
 
 class Game():
@@ -29,13 +28,19 @@ class Game():
                   {'x' : 21, 'y' : 17},
                   {'x' : 4, 'y' : 16},],
 
+    'Enemy' : [{'x': 5, 'y': 5, 'icon': "\U0001F9DF"}, # 🧟
+                {'x': 15, 'y': 15, 'icon': "\U0001F480"}], # 💀
+
     # Board pngs
     'obstacle': "\U0001FAA8 ",# 🪨
     'sword' : "\U0001f5e1\ufe0f", # 🗡️
     'axe' : "\U0001fa93", # 🪓
     'bow' : "\U0001f3f9", # 🏹
     'arrow' : "→", # →
-    'empty': "  "}
+    'empty': "  ",
+    'skeleton' : "\U0001F480", # 💀
+    'zombie': "\U0001F9DF", # 🧟  
+    }
 
 
         self.player_data = {       
@@ -45,6 +50,9 @@ class Game():
             'Player_Icon' : "\U0001F9DD", # 🧝
             }
     
+        self.enemy_count = 0
+
+
     def draw_board(self,stdscr):
     # Print the board and all game elements using curses
         stdscr.clear()
@@ -55,6 +63,9 @@ class Game():
                     row += self.player_data['Player_Icon']
                 elif any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle']):
                     row += self.game_data['obstacle']
+                elif any(e["x"] == x and e["y"] == y for e in self.game_data['Enemy']):
+                    enemy = next(e for e in self.game_data['Enemy'] if e["x"] == x and e["y"] == y)
+                    row += enemy['icon']
                 else:
                     row += self.game_data['empty']
                 try:
@@ -109,12 +120,21 @@ class Game():
     def spawn_collectible(self):
         pass
 
-    def welcome_message(self):
-        print("Welcome to the Adventure Game!")
-        print("Use WASD keys to move, and avoid obstacles. Press 'q' to quit.") 
+    def spawn_enemy(self):
+        if self.enemy_count >= 5:
+            return
+        # added a random chance to spawn an enemy each turn, and a limit on the total number of enemies that can be present at once.
+        if random.random() > 0.3:
+            return        
+        # Spawn an enemy at a random position that is not an obstacle
+        x = random.randint(0, self.game_data["Board_Width"] - 1)
+        y = random.randint(0, self.game_data["Board_Height"] - 1)
+        if not self.check_collision(x, y):
+            random_enemy_icon = random.choice([self.game_data['skeleton'], self.game_data['zombie']])
+            self.game_data['Enemy'].append({'x': x, 'y': y, 'icon': random_enemy_icon})
+            self.enemy_count += 1
 
     def play(self,stdscr):
-        self.welcome_message()
         # Main game loop to handle player input, update game state, and redraw the board
         
         stdscr.nodelay(False)
@@ -139,16 +159,6 @@ class Game():
 
         print("Game Over!\nFinal Score:", self.player_data["Player_Score"])    
 
-
-class Enemy():
-    def __init__(self):
-        self.enemy_data = {
-}
-    def move_enemy(self):
-        pass
-    
-
-# Good Luck!
 
 adventure_game = Game()
 # Use curses.wrapper with a callable that accepts the stdscr argument.
