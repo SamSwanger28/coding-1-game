@@ -8,7 +8,7 @@ Part I: Planning & Design (15 pts)
 Game Idea:
 
 The legend of zelda like game 
-
+Fighting monsters to earn rewards etc etc
 
 Game Rules:
 
@@ -30,7 +30,8 @@ if they run out of medice to heal then they have to restart
 players have health 
 
 
-  'obstacle': "\U0001FAA8 ",# 🪨
+
+    'obstacle': "\U0001FAA8 ",# 🪨
     'sword' : "\U0001f5e1\ufe0f", # 🗡️
     'axe' : "\U0001fa93", # 🪓
     'bow' : "\U0001f3f9", # 🏹
