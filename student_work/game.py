@@ -50,7 +50,7 @@ class Game():
             'Player_Icon' : "\U0001F9DD", # 🧝
             }
     
-        self.enemy_count = 0
+        self.enemy_count = 2
 
 
     def draw_board(self,stdscr):
@@ -121,7 +121,7 @@ class Game():
         pass
 
     def spawn_enemy(self):
-        if self.enemy_count >= 5:
+        if self.enemy_count >= 7:
             return
         # added a random chance to spawn an enemy each turn, and a limit on the total number of enemies that can be present at once.
         if random.random() > 0.3:
@@ -153,6 +153,8 @@ class Game():
                 break
             
             self.move_player(key.lower())
+            self.spawn_enemy()
+            self.spawn_collectible()
             
             # Check for collisions, update score, and redraw board
             self.draw_board(stdscr)
