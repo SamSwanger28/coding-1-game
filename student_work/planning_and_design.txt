@@ -15,6 +15,7 @@ Game Rules:
 players can move using wasd or arrow keys
 players can attack using spacebar/smth else
 players can pickup and choose to use new items
+beat 3 rooms in a row to beat the game 
 
 
 Major Game Elements:
@@ -23,6 +24,11 @@ weapons like sword hammer axe
 player model
 enemy model
 obstacles
+if you die you have to go back and restart
+players start with 3 medicine in there inventory 
+if they run out of medice to heal then they have to restart
+players have health 
+
 
   'obstacle': "\U0001FAA8 ",# 🪨
     'sword' : "\U0001f5e1\ufe0f", # 🗡️
