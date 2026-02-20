@@ -35,14 +35,15 @@ class Game():
     'axe' : "\U0001fa93", # 🪓
     'bow' : "\U0001f3f9", # 🏹
     'arrow' : "→", # →
-    'empty': "  "
-}
+    'empty': "  "}
+
+
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
             'Player_Health' : 5,
             'Player_Score' : 0,
             'Player_Icon' : "\U0001F9DD", # 🧝
- }
+            }
     
     def draw_board(self,stdscr):
     # Print the board and all game elements using curses
@@ -68,8 +69,7 @@ class Game():
         except curses.error:
             # My code is being weird and sometimes throws an error when trying to print the score/health. This is a workaround to prevent it from crashing.
             pass  
-        stdscr.refresh()
-        
+        stdscr.refresh()    
 
     def move_player(self, direction):
         # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
