@@ -101,7 +101,7 @@ class Game():
         if self.check_obstacle_collision(new_x, new_y) == False:
             self.player_data["Player_Start"]["x"] = new_x
             self.player_data["Player_Start"]["y"] = new_y
-            self.check_enemy_collision(new_x, new_y)
+            self.check_enemy_collision()
 
 
     def attack_enemy(self):
@@ -127,7 +127,7 @@ class Game():
                 self.enemy_count -= 1
                 break
 
-    def check_obstacle_collision(self, x, y):
+    def check_obstacle_collision(self,x,y):
         # Check if the position (x, y) is an obstacle
         if x < 0 or x >= self.game_data["Board_Width"] or y < 0 or y >= self.game_data["Board_Height"]:
             return True  # Collision with wall
@@ -136,10 +136,10 @@ class Game():
                 return True  # Collision detected
         return False  # No collision
 
-    def check_enemy_collision(self,x,y):
+    def check_enemy_collision(self):
         # Check if the player has collided with an enemy and update health/score accordingly
         for enemy in self.game_data['Enemy']:
-            if enemy['x'] == x and enemy['y'] == y:
+            if enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['x']:
                 self.player_data["Player_Health"] -= 1
                 return True  # Collision occurred
         return False  # No collision
@@ -195,6 +195,7 @@ class Game():
             if not self.check_obstacle_collision(new_x, new_y) and not self.check_enemy_on_enemy(new_x, new_y):
                 enemy['x'] = new_x
                 enemy['y'] = new_y
+                self.check_enemy_collision()
         
     def play_game(self,stdscr):
         # Main game loop to handle player input, update game state, and redraw the board
