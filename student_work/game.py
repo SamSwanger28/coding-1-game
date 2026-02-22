@@ -2,7 +2,6 @@
 import curses
 import random
 
-
 class Game():
     def __init__(self):
         self.game_data = {
@@ -37,9 +36,14 @@ class Game():
     'empty': "  ",
     'skeleton' : "\U0001F480", # 💀
     'zombie': "\U0001F9DF", # 🧟  
+    'ruppee' : "\U0001F48E", # 💎
     }
+        
+        self.enemy_count = 2
 
         self.collectibles = []
+
+        self.collectible_count = 0    
 
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
@@ -49,8 +53,6 @@ class Game():
             'Player_Icon' : "\U0001F9DD", # 🧝
             'Player_Weapon' : 'sword',
             }
-    
-        self.enemy_count = 2
 
     def draw_board(self,stdscr):
     # Print the board and all game elements using curses
@@ -68,6 +70,9 @@ class Game():
                     elif any(e["x"] == x and e["y"] == y for e in self.game_data['Enemy']):
                         enemy = next(e for e in self.game_data['Enemy'] if e["x"] == x and e["y"] == y)
                         row += enemy['icon']
+                    elif any(c["x"] == x and c["y"] == y for c in self.collectibles):
+                        collectible = next(c for c in self.collectibles if c["x"] == x and c["y"] == y)
+                        row += collectible['icon']
                     else:
                         row += self.game_data['empty']
                     try:
@@ -116,6 +121,7 @@ class Game():
             self.player_data["Player_Start"]["x"] = new_x
             self.player_data["Player_Start"]["y"] = new_y
             self.check_enemy_collision()
+            self.check_collectible_collision()
 
     def attack_enemy(self):
         for enemy in self.game_data['Enemy']:
@@ -164,6 +170,16 @@ class Game():
                 return True  # Collision with another enemy
         return False  # No collision with another enemy
 
+    def check_collectible_collision(self):
+        # Check if the player has collided with a collectible and update score accordingly
+        for collectible in self.collectibles:
+            if collectible['x'] == self.player_data['Player_Start']['x'] and collectible['y'] == self.player_data['Player_Start']['y']:
+                self.update_score(20)  # Award points for collecting an item
+                self.collectibles.remove(collectible)
+                self.collectible_count -= 1
+                return True  # Collision occurred
+        return False  # No collision
+
     def update_score(self, points):
         self.player_data["Player_Score"] += points
 
@@ -173,7 +189,14 @@ class Game():
         return False
 
     def spawn_collectible(self):
-        pass
+        if self.collectible_count >= 5:
+            return
+        # Spawn a collectible at a random position that is not an obstacle or enemy
+        x = random.randint(0, self.game_data["Board_Width"] - 1)
+        y = random.randint(0, self.game_data["Board_Height"] - 1)
+        if not self.check_obstacle_collision(x, y) and not self.check_enemy_on_enemy(x, y):
+            self.collectibles.append({'x': x, 'y': y, 'icon': self.game_data['ruppee']})
+            self.collectible_count += 1
 
     def spawn_enemy(self):
         if self.enemy_count >= 7:
@@ -224,10 +247,11 @@ class Game():
 
     def play_game(self,stdscr):
         # Main game loop to handle player input, update game state, and redraw the board
-        
         self.randomize_obstacles()
 
-        self.welcome_player(stdscr)
+        self.spawn_collectible()
+
+        self.welcome_player(stdscr) # 254 like the cheesy poofs         
 
         self.draw_board(stdscr)
 
@@ -251,7 +275,6 @@ class Game():
         while True:
             stdscr.clear()
             stdscr.addstr(10, 10, f"Game Over! Final Score: {self.player_data['Player_Score']}")
-            # 254 like the cheesy poofs
             stdscr.addstr(11, 10, "Press N to start a new game or Q to quit.")
             stdscr.refresh()
             try:
