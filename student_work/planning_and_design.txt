@@ -32,12 +32,17 @@ players have health
 
 
     'obstacle': "\U0001FAA8 ",# 🪨
-    'sword' : "\U0001f5e1\ufe0f", # 🗡️
-    'axe' : "\U0001fa93", # 🪓
-    'bow' : "\U0001f3f9", # 🏹
     'empty': "  "
 
 
 Gameplay Process:
 player has to walk around and kill other things without dying
 they get better and better gear and game ends when they die/quit
+
+I have decided to give up on adding weqapons as they make the game just a bit too complicated and i prefer the current gameplay work of just attacking with 'G'
+It works fine as is and would prefer to add more complex aditions like more dungeon rooms and diffrent monsters/items to the game
+I also want to add the healing functions
+And having weapons were making some aspects of gameplay clunky
+Next i want to add a store where you can spend points to upgrade health and attack range and maybe a point mulitplyer
+Another cool thing to add would be enimeis with more health
+one way i ould do this is make an enemy class where eniemies store health and other info in their class info

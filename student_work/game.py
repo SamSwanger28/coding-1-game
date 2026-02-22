@@ -63,8 +63,6 @@ class Game():
                 for x in range(self.game_data['Board_Width']):
                     if self.player_data["Player_Start"]["x"] == x and self.player_data["Player_Start"]["y"] == y:
                         row += self.player_data['Player_Icon']
-                    elif self.player_data["Weapon_Start"]["x"] == x and self.player_data["Weapon_Start"]["y"] == y:
-                        row += self.game_data[self.player_data['Player_Weapon']]
                     elif any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle']):
                         row += self.game_data['obstacle']
                     elif any(e["x"] == x and e["y"] == y for e in self.game_data['Enemy']):
