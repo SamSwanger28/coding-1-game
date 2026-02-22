@@ -208,9 +208,6 @@ class Game():
                 key  = stdscr.getkey()
             except curses.error:
                 key = None
-            
-            if key is None:
-                continue
 
             if key.lower() == 'q':
                 break
