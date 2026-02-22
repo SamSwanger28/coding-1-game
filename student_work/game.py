@@ -213,11 +213,23 @@ class Game():
             elif not self.check_obstacle_collision(new_x, new_y) and not self.check_enemy_on_enemy(new_x, new_y):
                 enemy['x'] = new_x
                 enemy['y'] = new_y
-        
+
+    def welcome_player(self,stdscr):
+        stdscr.clear()
+        stdscr.addstr(10, 10, "Welcome to the Adventure Game!")
+        stdscr.addstr(11, 10, "Move with W/A/S/D, Press G to attack, Q to quit")
+        stdscr.addstr(12, 10, "Defeat enemies and survive as long as you can!")
+        stdscr.refresh()
+        stdscr.getch()  # Wait for player to press a key
+
     def play_game(self,stdscr):
         # Main game loop to handle player input, update game state, and redraw the board
         
         self.randomize_obstacles()
+
+        self.welcome_player(stdscr)
+
+        self.draw_board(stdscr)
 
         stdscr.nodelay(False)
 
@@ -239,6 +251,7 @@ class Game():
         while True:
             stdscr.clear()
             stdscr.addstr(10, 10, f"Game Over! Final Score: {self.player_data['Player_Score']}")
+            # 254 like the cheesy poofs
             stdscr.addstr(11, 10, "Press N to start a new game or Q to quit.")
             stdscr.refresh()
             try:
@@ -251,7 +264,6 @@ class Game():
                 break
             elif key.lower() == 'q':
                 break
-# 254 like the cheesy poofs
 adventure_game = Game()
 # Use curses.wrapper with a callable that accepts the stdscr argument.
 curses.wrapper(adventure_game.play_game)
