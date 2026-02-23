@@ -9,6 +9,13 @@ In this project, you will design and build a video game.  I recommend that you d
 
 #### [Please Fork this Repo to begin](https://github.com/rlj0713/coding-1-game/fork)
 ---
+### Helpful Links for This Unit:
+*  [How does GitHub work?](https://youtu.be/r8jQ9hVA2qs?si=5Ij4vQbm1ZObR0PL)
+*  [Using Curses](https://docs.python.org/3/howto/curses.html)
+*  [Cool Game Icons](https://apps.timwhitlock.info/emoji/tables/unicode)
+*  [ASCII Art](https://www.asciiart.eu/)
+*  [Git Hub Cheat-Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
+---
 
 ## Project Requirements:
 
