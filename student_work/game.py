@@ -8,24 +8,7 @@ class Game():
     # Store board dimensions, player/enemy positions, score, energy, collectibles, and icons
     'Board_Width' : 25,
     'Board_Height' : 20,
-    'Obstacle' : [{'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0}, 
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},
-                  {'x' : 0, 'y' : 0},],
+    'Obstacle' : [], # Will be populated with random obstacles
 
     'Enemy' : [{'x': 5, 'y': 5, 'icon': "\U0001F9DF"}, # 🧟
                 {'x': 15, 'y': 15, 'icon': "\U0001F480"}], # 💀
@@ -90,13 +73,12 @@ class Game():
 
     def randomize_obstacles(self):
         # Randomly place obstacles on the board, ensuring they don't overlap with the player or enemies
-        for obstacle in self.game_data['Obstacle']:
+        for obstacle in range(20):
             while True:
                 x = random.randint(0, self.game_data["Board_Width"] - 1)
                 y = random.randint(0, self.game_data["Board_Height"] - 1)
                 if (x, y) != (self.player_data["Player_Start"]["x"], self.player_data["Player_Start"]["y"]) and not any(e["x"] == x and e["y"] == y for e in self.game_data['Enemy']):
-                    obstacle['x'] = x
-                    obstacle['y'] = y
+                    self.game_data['Obstacle'].append({'x': x, 'y': y})
                     break
     
     def move_player(self, direction):

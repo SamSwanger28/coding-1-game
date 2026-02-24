@@ -12,6 +12,8 @@ Fighting monsters to earn rewards etc etc
 
 Game Rules:
 
+board size: 25 x 20
+
 players can move using wasd or arrow keys
 players can attack using spacebar/smth else
 players can pickup and choose to use new items
