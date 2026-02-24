@@ -17,20 +17,21 @@ Game Rules:
 
 board size: 25 x 20
 
-players can move using wasd or arrow keys
-players can attack using spacebar/smth else
-players can pickup and choose to use new items
-beat 3 rooms in a row to beat the game 
+players can move using wasd 
+players can attack using spacebar (diagonal and orthogonal)
+players can pickup gems and use them to buy things in the shop (walk over) 
+users can open the shop and use gems to buy more health, wepon upgrades and special wepons (extra) 
+beat 3 rooms in a row to beat the game
+
 
 
 Major Game Elements:
 
-weapons like sword hammer axe
 player model
 enemy model
 obstacles
 if you die you have to go back and restart
-players start with 3 medicine in there inventory 
+players start with 3 medicine in there inventory (displayed at bottom, only shows medicine)
 if they run out of medice to heal then they have to restart
 players have health 
 
@@ -40,6 +41,8 @@ players have health
     'skeleton' : "\U0001F480", # 💀
     'zombie': "\U0001F9DF", # 🧟  
     'ruppee' : "\U0001F48E", # 💎
+    'Player_Icon' : "\U0001F9DD", # 🧝
+
 
 players get score increce when they pick up gems and kill enimeis
 players take damage when walking onto an enieme without killing it and when an enemy walks onto the same space as the player
@@ -54,4 +57,4 @@ I also want to add the healing functions
 And having weapons were making some aspects of gameplay clunky
 Next i want to add a store where you can spend points to upgrade health and attack range and maybe a point mulitplyer
 Another cool thing to add would be enimeis with more health
-one way i ould do this is make an enemy class where eniemies store health and other info in their class info
+one way i would do this is make an enemy class where eniemies store health and other info in their class info
