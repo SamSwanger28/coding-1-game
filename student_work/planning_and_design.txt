@@ -31,11 +31,15 @@ players start with 3 medicine in there inventory
 if they run out of medice to heal then they have to restart
 players have health 
 
-
-
     'obstacle': "\U0001FAA8 ",# 🪨
-    'empty': "  "
+    'sword' : "\U0001F5E1", # 🗡️
+    'empty': "  ",
+    'skeleton' : "\U0001F480", # 💀
+    'zombie': "\U0001F9DF", # 🧟  
+    'ruppee' : "\U0001F48E", # 💎
 
+players get score increce when they pick up gems and kill enimeis
+players take damage when walking onto an enieme without killing it and when an enemy walks onto the same space as the player
 
 Gameplay Process:
 player has to walk around and kill other things without dying
