@@ -18,8 +18,6 @@ class Game():
     'ruppee' : "\U0001F48E", # 💎
     }
 
-        
-
     def draw_board(self,stdscr):
     # Print the board and all game elements using curses
         stdscr.clear()
