@@ -17,9 +17,6 @@ class Game():
     'zombie': "\U0001F9DF", # 🧟  
     'ruppee' : "\U0001F48E", # 💎
     }
-        
-        self.enemy_count = 2
-
 
         
 
@@ -67,19 +64,6 @@ class Game():
                     self.game_data['Obstacle'].append({'x': x, 'y': y})
                     break
     
-
-
-    
-    
-    
-
-
-    
-    def check_game_over(self):
-        if self.player_data["Player_Health"] <= 0:
-            return True
-        return False
-
     def spawn_collectible(self):
         if self.collectible_count >= 5:
             return
@@ -93,13 +77,11 @@ class Game():
 
     
 
-player = Player(input("What is your name?"))
-adventure_game = Game()
+
 
 # Use curses.wrapper with a callable that accepts the stdscr argument.
 
-class Player():
-    
+class Player(): 
     def __init__(self,player_name):
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
@@ -133,13 +115,12 @@ class Player():
                 self.update_score(10)
                 self.enemy_count -= 1
                 break
-            elif
     
     def update_score(self, points):
         self.player_data["Player_Score"] += points
 
-        def move_player(self, direction):
-        # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
+    def move_player(self, direction):
+    # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
         new_x = self.player_data["Player_Start"]["x"]
         new_y = self.player_data["Player_Start"]["y"]
         if direction == 'w':  # Up
@@ -160,24 +141,15 @@ class Player():
             self.check_enemy_collision()
             self.check_collectible_collision()
 
-    def check_obstacle_collision(self,x,y):
-        # Check if the position (x, y) is an obstacle
-        if x < 0 or x >= self.game_data["Board_Width"] or y < 0 or y >= self.game_data["Board_Height"]:
-            return True  # Collision with wall
-        for obstacle in self.game_data['Obstacle']:
-            if obstacle['x'] == x and obstacle['y'] == y:
-                return True  # Collision detected
-        return False  # No collision
-
     def check_enemy_collision(self):
     # Check if the player has collided with an enemy and update health/score accordingly
-    for enemy in self.game_data['Enemy']:
-        if enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']:
-            self.player_data["Player_Health"] -= 1
-            return True  # Collision occurred
-    return False  # No collision
+        for enemy in self.game_data['Enemy']:
+            if enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']:
+                self.player_data["Player_Health"] -= 1
+                return True  # Collision occurred
+        return False  # No collision
 
-    def check_collectible_collision(self):
+    def check_collectible_collision(self,collectible):
         # Check if the player has collided with a collectible and update score accordingly
         for collectible in self.collectibles:
             if collectible['x'] == self.player_data['Player_Start']['x'] and collectible['y'] == self.player_data['Player_Start']['y']:
@@ -187,10 +159,15 @@ class Player():
                 return True  # Collision occurred
         return False  # No collision
 
+    def check_game_over(self):
+        if self.player_data["Player_Health"] <= 0:
+            return True
+        return False
+
 class Enemy():
     def __init__(self):
         self.enemy_count = 2
-        enemy_locations = [{'x': 5, 'y': 5, 'icon': "\U0001F9DF"}, # 🧟
+        self.enemy_locations = [{'x': 5, 'y': 5, 'icon': "\U0001F9DF"}, # 🧟
                             {'x': 15, 'y': 15, 'icon': "\U0001F480"}], # 💀
     
     def move_enemies(self):
@@ -244,21 +221,21 @@ class Colectible():
         self.collectibles = []
         self.collectible_count = 0    
 
-def play_game(stdscr):
+def play_game(stdscr,game_type,player):
         # Main game loop to handle player input, update game state, and redraw the board
-        randomize_obstacles()
+        game_type.randomize_obstacles()
 
-        spawn_collectible()
+        game_type.spawn_collectible()
 
         welcome_player(stdscr) 
         
         # 254 like the cheesy poofs         
 
-        draw_board(stdscr)
+        game_type.draw_board(stdscr)
 
         stdscr.nodelay(False)
 
-        while not check_game_over():
+        while not player.check_game_over():
             # Get player input and move player accordingly
             try:
                 key  = stdscr.getkey()
@@ -268,14 +245,14 @@ def play_game(stdscr):
             if key.lower() == 'q':
                 break
             
-            move_player(key.lower())
+            player.move_player(key.lower())
             move_enemies()
             spawn_enemy()
             spawn_collectible()
             draw_board(stdscr)
         while True:
             stdscr.clear()
-            stdscr.addstr(10, 10, f"Game Over! Final Score: {player_data['Player_Score']}")
+            stdscr.addstr(10, 10, f"Game Over! Final Score: {player.player_data['Player_Score']}")
             stdscr.addstr(11, 10, "Press N to start a new game or Q to quit.")
             stdscr.refresh()
             try:
@@ -283,8 +260,8 @@ def play_game(stdscr):
             except curses.error:
                 key = None
             if key.lower() == 'n':
-                self.__init__()  # Reset the game state
-                self.play_game(stdscr)  # Restart the game loop
+                game_type.__init__()  # Reset the game state
+                play_game(stdscr, game_type, player)  # Restart the game loop
                 break
             elif key.lower() == 'q':
                 break
@@ -297,4 +274,17 @@ def welcome_player(stdscr):
         stdscr.refresh()
         stdscr.getch()  # Wait for player to press a key
 
-curses.wrapper(play_game)
+def check_obstacle_collision(x,y):
+    # Check if the position (x, y) is an obstacle
+    if x < 0 or x >= adventure_game.game_data["Board_Width"] or y < 0 or y >= adventure_game.game_data["Board_Height"]:
+        return True  # Collision with wall
+    for obstacle in adventure_game.game_data['Obstacle']:
+        if obstacle['x'] == x and obstacle['y'] == y:
+            return True  # Collision detected
+    return False  # No collision
+
+
+player_one = Player(input("What is your name?"))
+adventure_game = Game()
+
+curses.wrapper(play_game, adventure_game, player_one)
