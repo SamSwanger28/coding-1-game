@@ -1,5 +1,8 @@
 Part I: Planning & Design (15 pts)
 
+https://prod.liveshare.vsengsaas.visualstudio.com/join?F6E3A9BBB48BA44DF624E629B533F735EB3A
+
+
 * Decide on a game idea and core goal
 * Game rules and player actions are written or sketched out
 * Main objects (player, obstacles, goals, enemies, etc.) are identified
