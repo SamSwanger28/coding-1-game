@@ -49,7 +49,7 @@ class Game():
             stdscr.addstr(self.game_data["Board_Height"] + 1, 20, f"Score: {player.player_data['Player_Score']} ")
             stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, H to heal, B to shop when by the shop, Q to quit")
             stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Player_Health']} ")
-            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion'],}")
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion']}")
         
         except curses.error:
             # My code is being weird and sometimes throws an error when trying to print the score/health. This is a workaround to prevent it from crashing.
@@ -267,7 +267,7 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
                 game_type.__init__()
                 enemy_manager.__init__()
                 collectible_manager.__init__()
-                play_game(stdscr, game_type, player, enemy_manager, collectible_manager)
+                play_game(stdscr, game_type, player, enemy_manager, collectible_manager, shop_manager)
                 break
             elif key.lower() == 'q':
                 break
