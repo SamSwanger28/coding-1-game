@@ -19,7 +19,7 @@ class Game():
     'ruppee' : "\U0001F48E", # 💎
     }
 
-    def draw_board(self, stdscr, enemy_manager, collectible_manager, player):
+    def draw_board(self, stdscr, enemy_manager, collectible_manager, player, shop_manager):
         # Print the board and all game elements using curses
         stdscr.clear()
         for y in range(self.game_data["Board_Height"]):
@@ -37,6 +37,8 @@ class Game():
                 elif any(c["x"] == x and c["y"] == y for c in collectible_manager.collectibles):
                     collectible = next(c for c in collectible_manager.collectibles if c["x"] == x and c["y"] == y)
                     row += collectible['icon']
+                elif shop_manager.shop_data['x'] == x and shop_manager.shop_data['y'] == y:
+                    row += shop_manager.shop_data['icon']
                 else:
                     row += self.game_data['empty']
             try:
@@ -84,49 +86,15 @@ class Player():
             'Damage_Reduction_Unlocked' : False
             }
     
-    def attack_enemy(self, enemy_manager):
+    def attack_enemy(self, enemy_manager,x,y):
         for enemy in enemy_manager.enemy_locations:
-            if enemy['x'] == self.player_data['Player_Start']['x']+1 and enemy['y'] == self.player_data['Player_Start']['y']:
-                enemy_manager.enemy_locations.remove(enemy)
-                self.update_score(10)# Award points for defeating an enemy
-                enemy_manager.enemy_count -= 1
-                break  # Only attack one enemy at a time
-            elif enemy['x'] == self.player_data['Player_Start']['x']-1 and enemy['y'] == self.player_data['Player_Start']['y']:
-                enemy_manager.enemy_locations.remove(enemy)
-                self.update_score(10)
-                enemy_manager.enemy_count -= 1
-                break
-            elif enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']+1:
-                enemy_manager.enemy_locations.remove(enemy)
-                self.update_score(10)
-                enemy_manager.enemy_count -= 1
-                break
-            elif enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']-1:
-                enemy_manager.enemy_locations.remove(enemy)
-                self.update_score(10)
-                enemy_manager.enemy_count -= 1
-                break
-            if self.player_data['Diangonals_Unlocked']:
-                if enemy['x'] == self.player_data['Player_Start']['x']+1 and enemy['y'] == self.player_data['Player_Start']['y']+1:
-                    enemy_manager.enemy_locations.remove(enemy)
-                    self.update_score(10)
-                    enemy_manager.enemy_count -= 1
-                    break
-                elif enemy['x'] == self.player_data['Player_Start']['x']-1 and enemy['y'] == self.player_data['Player_Start']['y']-1:
-                    enemy_manager.enemy_locations.remove(enemy)
-                    self.update_score(10)
-                    enemy_manager.enemy_count -= 1
-                    break
-                elif enemy['x'] == self.player_data['Player_Start']['x']+1 and enemy['y'] == self.player_data['Player_Start']['y']-1:
-                    enemy_manager.enemy_locations.remove(enemy)
-                    self.update_score(10)
-                    enemy_manager.enemy_count -= 1
-                    break
-                elif enemy['x'] == self.player_data['Player_Start']['x']-1 and enemy['y'] == self.player_data['Player_Start']['y']+1:
-                    enemy_manager.enemy_locations.remove(enemy)
-                    self.update_score(10)
-                    enemy_manager.enemy_count -= 1
-                    break
+            for i in range(x - 1, x + 2):
+                for j in range(y - 1, y + 2):
+                    if enemy['x'] == i and enemy['y'] == j:
+                        enemy_manager.enemy_locations.remove(enemy)
+                        enemy_manager.enemy_count -= 1
+                        self.update_score(10)  # Award points for defeating an enemy
+                        return True  # Enemy attacked
     
     def update_score(self, points):
         self.player_data["Player_Score"] += points
@@ -144,7 +112,7 @@ class Player():
         elif direction == 'd':  # Right
             new_x += 1
         elif direction == 'g':
-            self.attack_enemy(enemy_manager)
+            self.attack_enemy(enemy_manager,new_x,new_y)
             return
         elif direction == 'h':  # Use health potion
             if self.player_data['Health_Potion'] > 0 and self.player_data['Player_Health'] < 5:
@@ -255,7 +223,7 @@ class Collectible():
             self.collectibles.append({'x': x, 'y': y, 'icon': game_type.game_data['ruppee']})
             self.collectible_count += 1
 
-def play_game(stdscr,game_type,player,enemy_manager,collectible_manager):
+def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_manager):
         # Main game loop to handle player input, update game state, and redraw the board
         game_type.randomize_obstacles(player, enemy_manager)
 
@@ -263,7 +231,7 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager):
 
         # welcome_player(stdscr) 
         
-        game_type.draw_board(stdscr, enemy_manager, collectible_manager,player)
+        game_type.draw_board(stdscr, enemy_manager, collectible_manager,player,shop_manager)
 
         stdscr.nodelay(False)
 
@@ -281,7 +249,7 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager):
             enemy_manager.move_enemies(player,game_type)
             enemy_manager.spawn_enemy(game_type)
             collectible_manager.spawn_collectible(game_type,enemy_manager)
-            game_type.draw_board(stdscr, enemy_manager, collectible_manager,player)
+            game_type.draw_board(stdscr, enemy_manager, collectible_manager,player,shop_manager)
         while True:
             stdscr.clear()
             stdscr.addstr(10, 10, f"Game Over! Final Score: {player.player_data['Player_Score']}")
@@ -327,21 +295,55 @@ def check_obstacle_collision(x, y, game, interacter=None):
 class Shop():
     def __init__(self):
         self.items = {
-            'Range Upgrade': {'cost': 50, 'description': 'Attack enemies on a diagonal', 'icon': "\U0001F50D"}, # 🔍
-            'Damage Reduction': {'cost': 75, 'description': 'Take less damage from enemies', 'icon': "\U0001F6E1"}, # 🛡
-            'Health Potion': {'cost': 30, 'description': 'Restore 1 health points', 'icon': "\U0001F9C0"}, # 🧃
+            'Damage Reduction': {'cost': 175, 'description': 'Take less damage from enemies', 'icon': "\U0001F6E1"}, # 🛡
+            'Health Potion': {'cost': 300, 'description': 'Restore 1 health points', 'icon': "\U0001F9C0"}, # 🧃
+            'Aoe Attack': {'cost': 350, 'description': 'Attack all adjacent enemies', 'icon': "\U0001F32A"}, # 🌪
         }
         
         self.shop_data = {
-            'Shop_Icon': "\U0001F3EA", # 🏪
-            'x' : random.randint(0, 24),
-            'y' : random.randint(0, 19)
+            'icon': "\U0001F3EA", # 🏪
+            'x' : 24,
+            'y' : 19
         }
-
+    def interact_with_shop(self, player, stdscr):
+        stdscr.clear()
+        stdscr.addstr(1,1, "Welcome to my shop! You may browse my wares and obtain items to aid you in your deadly travles.")
+        stdscr.addstr(2,1, f"You have {player.player_data['Player_Score']} rupees.")
+        stdscr.addstr(4,1, "Items for sale:")
+        for i, (item_name, item_info) in enumerate(self.items.items(), start=1):
+            stdscr.addstr(5+i, 3, f"{i}. {item_info['icon']} {item_name} - {item_info['cost']} rupees")
+            stdscr.addstr(5+i, 40, f"{item_info['description']}")
+        stdscr.addstr(11,1, "Press the number of the item you wish to purchase, or B to exit the shop.")
+        stdscr.refresh()
+        while True:            
+            try:
+                key = stdscr.getkey()
+            except curses.error:
+                key = None
+            if key.lower() == 'b':
+                break   
+            elif key in ['1', '2', '3']:
+                item_index = int(key) - 1
+                if item_index < len(self.items):
+                    item_name = list(self.items.keys())[item_index]
+                    item_info = self.items[item_name]
+                    if player.player_data['Player_Score'] >= item_info['cost']:
+                        player.player_data['Player_Score'] -= item_info['cost']
+                        if item_name == 'Damage Reduction':
+                            player.player_data['Damage_Reduction_Unlocked'] = True
+                        elif item_name == 'Health Potion':
+                            player.player_data['Health_Potion'] += 1
+                        elif item_name == 'Aoe Attack':
+                            pass  # Implement AOE attack functionality as needed
+                        stdscr.addstr(17,1, f"You purchased {item_name}!")
+                    else:
+                        stdscr.addstr(17,1, "You don't have enough rupees for that item.")
+                    stdscr.refresh()
 
 shop_manager = Shop()
 player_one = Player()
 adventure_game = Game()
 enemy_manager = Enemy()
 collectible_manager = Collectible()
-curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager)
+# curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
+shop_manager.interact_with_shop(player_one, curses.initscr())
