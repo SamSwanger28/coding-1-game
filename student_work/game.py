@@ -1,6 +1,7 @@
     # Write your game here
 import curses
 import random
+import time
 
 class Game():
     def __init__(self):
@@ -79,28 +80,37 @@ class Player():
             'Weapon_Start' : {'x' : 3, 'y' : 10},
             'Player_Health' : 5,
             'Player_Score' : 0,
-            'Player_Icon' : "\U0001F9DD", # 🧝
+            'Player_Icon' : "\U0001F9DD ", # 🧝
             'Player_Weapon' : 'sword',
             'Health_Potion' : 3,
             'Diangonals_Unlocked' : True,
             'Damage_Reduction_Unlocked' : False
             }
-    
-    def attack_enemy(self, enemy_manager,x,y):
+        self.pow_icon = "\U0001F4A5 " # 💥
+    def attack_enemy(self, enemy_manager, x, y, stdscr):
         for enemy in enemy_manager.enemy_locations:
             for i in range(x - 1, x + 2):
                 for j in range(y - 1, y + 2):
                     if enemy['x'] == i and enemy['y'] == j:
+                        # curses uses y,x ordering for addstr
+                        self.spawn_pow_effect(stdscr, enemy['x'], enemy['y'])
                         enemy_manager.enemy_locations.remove(enemy)
                         enemy_manager.enemy_count -= 1
                         self.update_score(10)  # Award points for defeating an enemy
                         return True  # Enemy attacked
     
+    def spawn_pow_effect(self, stdscr, x, y):
+        stdscr.addstr(y, x*2, self.pow_icon)  # Draw the pow icon at the enemy's position (x*2 because each cell is 2 characters wide)
+        stdscr.refresh()
+        time.sleep(0.1)  # Pause briefly to show the effect
+        stdscr.addstr(y, x*2, "  ")  # Clear the pow icon after the effect
+        stdscr.refresh()
+
     def update_score(self, points):
         self.player_data["Player_Score"] += points
 
-    def move_player(self, direction, enemy_manager, collectible_manager,game_type):
-    # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
+    def move_player(self, direction, enemy_manager, collectible_manager, game_type, shop_manager, stdscr):
+        # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
         new_x = self.player_data["Player_Start"]["x"]
         new_y = self.player_data["Player_Start"]["y"]
         if direction == 'w':  # Up
@@ -112,7 +122,7 @@ class Player():
         elif direction == 'd':  # Right
             new_x += 1
         elif direction == 'g':
-            self.attack_enemy(enemy_manager,new_x,new_y)
+            self.attack_enemy(enemy_manager,new_x,new_y,stdscr)
             return
         elif direction == 'h':  # Use health potion
             if self.player_data['Health_Potion'] > 0 and self.player_data['Player_Health'] < 5:
@@ -120,8 +130,10 @@ class Player():
                 self.player_data['Health_Potion'] -= 1
             return
         elif direction == 'b':  # Interact with shop
-            if game_type.game_data['Shop_data']['x'] == self.player_data['Player_Start']['x'] and game_type.game_data['Shop_data']['y'] == self.player_data['Player_Start']['y']:
-                shop_manager.interact_with_shop(self, curses.initscr())
+            # only allow shopping when standing on the shop location
+            if shop_manager.shop_data['x'] == self.player_data['Player_Start']['x'] and shop_manager.shop_data['y'] == self.player_data['Player_Start']['y']:
+                # reuse the existing curses window instead of opening a new one
+                shop_manager.interact_with_shop(self, stdscr)
             return
         # Check for boundaries
         if not check_obstacle_collision(new_x, new_y, game_type, interacter=self):
@@ -134,7 +146,10 @@ class Player():
     # Check if the player has collided with an enemy and update health/score accordingly
         for enemy in enemy_manager.enemy_locations:
             if enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']:
-                self.player_data["Player_Health"] -= 1
+                if self.player_data['Damage_Reduction_Unlocked']:
+                    self.player_data["Player_Health"] -= 0.5  # Reduce damage by half if damage reduction is unlocked
+                else:
+                    self.player_data["Player_Health"] -= 1
                 return True  # Collision occurred
         return False  # No collision
 
@@ -247,7 +262,7 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
             if key.lower() == 'q':
                 break
             
-            player.move_player(key.lower(), enemy_manager, collectible_manager, game_type)
+            player.move_player(key.lower(), enemy_manager, collectible_manager, game_type, shop_manager, stdscr)
             enemy_manager.move_enemies(player,game_type)
             enemy_manager.spawn_enemy(game_type)
             collectible_manager.spawn_collectible(game_type,enemy_manager)
@@ -342,10 +357,11 @@ class Shop():
                         stdscr.addstr(17,1, "You don't have enough rupees for that item.")
                     stdscr.refresh()
 
-shop_manager = Shop()
-player_one = Player()
-adventure_game = Game()
-enemy_manager = Enemy()
-collectible_manager = Collectible()
-curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
-# shop_manager.interact_with_shop(player_one, curses.initscr())
+if __name__ == "__main__":
+    shop_manager = Shop()
+    player_one = Player()
+    adventure_game = Game()
+    enemy_manager = Enemy()
+    collectible_manager = Collectible()
+    curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
+    # shop_manager.interact_with_shop(player_one, curses.initscr())
