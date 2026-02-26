@@ -50,8 +50,8 @@ class Game():
             stdscr.addstr(self.game_data["Board_Height"] + 1, 20, f"Score: {player.player_data['Player_Score']} ")
             stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, H to heal, B to shop when by the shop, Q to quit")
             stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Player_Health']} ")
-            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion']}")
-        
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion']}")      
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 60, f"Mana: {player.player_data['Player_Mana']} {player.player_data['Mana_Icon']*player.player_data['Player_Mana']}")  
         except curses.error:
             # My code is being weird and sometimes throws an error when trying to print the score/health. This is a workaround to prevent it from crashing.
             pass
@@ -83,10 +83,14 @@ class Player():
             'Player_Icon' : "\U0001F9DD ", # 🧝
             'Player_Weapon' : 'sword',
             'Health_Potion' : 3,
-            'Diangonals_Unlocked' : True,
-            'Damage_Reduction_Unlocked' : False
+            'Player_Mana' : 6,
+            'Mana_Icon' : "\U0001F7E6 ", # 🟦
+            'Damage_Reduction_Unlocked' : False,
+            'Aoe_Attack_Unlocked' : True
             }
         self.pow_icon = "\U0001F4A5 " # 💥
+        self.aoe_icon = "\U0001F32A " # 🌪
+    
     def attack_enemy(self, enemy_manager, x, y, stdscr):
         for enemy in enemy_manager.enemy_locations:
             for i in range(x - 1, x + 2):
@@ -97,8 +101,8 @@ class Player():
                         enemy_manager.enemy_locations.remove(enemy)
                         enemy_manager.enemy_count -= 1
                         self.update_score(10)  # Award points for defeating an enemy
-                        return True  # Enemy attacked
-    
+                        self.add_mana(1)  # Gain mana for each enemy defeated
+
     def spawn_pow_effect(self, stdscr, x, y):
         stdscr.addstr(y, x*2, self.pow_icon)  # Draw the pow icon at the enemy's position (x*2 because each cell is 2 characters wide)
         stdscr.refresh()
@@ -106,8 +110,24 @@ class Player():
         stdscr.addstr(y, x*2, "  ")  # Clear the pow icon after the effect
         stdscr.refresh()
 
+    def spawn_aoe_effect(self, stdscr, x, y):
+        for i in range(x - 3, x + 6):
+            for j in range(y - 3, y + 6):
+                stdscr.addstr(j, i*2, self.aoe_icon)  # Draw the aoe icon in the area of effect
+        stdscr.refresh()
+        time.sleep(0.1)  # Pause briefly to show the effect
+        for i in range(x - 1, x + 2):
+            for j in range(y - 1, y + 2):
+                stdscr.addstr(j, i*2, "  ")  # Clear the aoe icons after the effect
+        stdscr.refresh() 
+
     def update_score(self, points):
         self.player_data["Player_Score"] += points
+
+    def add_mana(self, amount):
+        if self.player_data['Player_Mana'] < 6:
+            self.player_data['Player_Mana'] += amount
+        return
 
     def move_player(self, direction, enemy_manager, collectible_manager, game_type, shop_manager, stdscr):
         # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
@@ -134,6 +154,9 @@ class Player():
             if shop_manager.shop_data['x'] == self.player_data['Player_Start']['x'] and shop_manager.shop_data['y'] == self.player_data['Player_Start']['y']:
                 # reuse the existing curses window instead of opening a new one
                 shop_manager.interact_with_shop(self, stdscr)
+            return
+        elif direction == 'e' and self.player_data['Aoe_Attack_Unlocked']:
+            self.aoe_attack(enemy_manager, stdscr)
             return
         # Check for boundaries
         if not check_obstacle_collision(new_x, new_y, game_type, interacter=self):
@@ -167,6 +190,20 @@ class Player():
         if self.player_data["Player_Health"] <= 0:
             return True
         return False
+
+    def aoe_attack(self, enemy_manager, stdscr):
+        if self.player_data["Player_Mana"] < 3:
+            return False  # Not enough mana to perform AOE attack
+        self.player_data["Player_Mana"] -= 3  # Consume mana for AOE attack
+        self.spawn_aoe_effect(stdscr, self.player_data["Player_Start"]["x"], self.player_data["Player_Start"]["y"])
+        for i in range(self.player_data["Player_Start"]["x"] - 3, self.player_data["Player_Start"]["x"] + 6):
+            for j in range(self.player_data["Player_Start"]["y"] - 3, self.player_data["Player_Start"]["y"] + 6):
+                for enemy in enemy_manager.enemy_locations:
+                    if enemy['x'] == i and enemy['y'] == j:
+                        self.spawn_pow_effect(stdscr, enemy['x'], enemy['y'])
+                        enemy_manager.enemy_locations.remove(enemy)
+                        enemy_manager.enemy_count -= 1
+                        self.update_score(10)  # Award points for defeating an enemy
 
 class Enemy():
     def __init__(self):
@@ -351,17 +388,15 @@ class Shop():
                         elif item_name == 'Health Potion':
                             player.player_data['Health_Potion'] += 1
                         elif item_name == 'Aoe Attack':
-                            pass  # Implement AOE attack functionality as needed
+                            player.player_data['Aoe_Attack_Unlocked'] = True
                         stdscr.addstr(17,1, f"You purchased {item_name}!")
                     else:
                         stdscr.addstr(17,1, "You don't have enough rupees for that item.")
                     stdscr.refresh()
 
-if __name__ == "__main__":
-    shop_manager = Shop()
-    player_one = Player()
-    adventure_game = Game()
-    enemy_manager = Enemy()
-    collectible_manager = Collectible()
-    curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
-    # shop_manager.interact_with_shop(player_one, curses.initscr())
+shop_manager = Shop()
+player_one = Player()
+adventure_game = Game()
+enemy_manager = Enemy()
+collectible_manager = Collectible()
+curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
