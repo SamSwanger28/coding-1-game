@@ -120,7 +120,9 @@ class Player():
                 self.player_data['Health_Potion'] -= 1
             return
         elif direction == 'b':  # Interact with shop
-            pass
+            if game_type.game_data['Shop_data']['x'] == self.player_data['Player_Start']['x'] and game_type.game_data['Shop_data']['y'] == self.player_data['Player_Start']['y']:
+                shop_manager.interact_with_shop(self, curses.initscr())
+            return
         # Check for boundaries
         if not check_obstacle_collision(new_x, new_y, game_type, interacter=self):
             self.player_data["Player_Start"]["x"] = new_x
@@ -345,5 +347,5 @@ player_one = Player()
 adventure_game = Game()
 enemy_manager = Enemy()
 collectible_manager = Collectible()
-# curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
-shop_manager.interact_with_shop(player_one, curses.initscr())
+curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager, shop_manager)
+# shop_manager.interact_with_shop(player_one, curses.initscr())
