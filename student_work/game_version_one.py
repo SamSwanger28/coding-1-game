@@ -231,7 +231,7 @@ class Game():
 
         self.spawn_collectible()
 
-        self.welcome_player(stdscr) 
+        # self.welcome_player(stdscr) 
         
         # 254 like the cheesy poofs         
 

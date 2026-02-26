@@ -8,79 +8,70 @@ class Game():
     # Store board dimensions, player/enemy positions, score, energy, collectibles, and icons
     'Board_Width' : 25,
     'Board_Height' : 20,
-    'Obstacle' : [], # Will be populated with random obstacles
+    'Obstacle_data' : [], # Will be populated with random obstacles
 
     # Board pngs
     'obstacle': "\U0001FAA8 ",# 🪨
+    'cactus': "\U0001F335 ", # 🌵
     'empty': "  ",
     'skeleton' : "\U0001F480", # 💀
     'zombie': "\U0001F9DF", # 🧟  
     'ruppee' : "\U0001F48E", # 💎
     }
 
-    def draw_board(self,stdscr):
-    # Print the board and all game elements using curses
+    def draw_board(self, stdscr, enemy_manager, collectible_manager, player):
+        # Print the board and all game elements using curses
         stdscr.clear()
         for y in range(self.game_data["Board_Height"]):
             row = " "
+            # build the entire row first, then draw it once
+            for x in range(self.game_data['Board_Width']):
+                if player.player_data["Player_Start"]["x"] == x and player.player_data["Player_Start"]["y"] == y:
+                    row += player.player_data['Player_Icon']
+                elif any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle_data']):
+                    obstacle = next(o for o in self.game_data['Obstacle_data'] if o["x"] == x and o["y"] == y)
+                    row += obstacle['icon']
+                elif any(e["x"] == x and e["y"] == y for e in enemy_manager.enemy_locations):
+                    enemy = next(e for e in enemy_manager.enemy_locations if e["x"] == x and e["y"] == y)
+                    row += enemy['icon']
+                elif any(c["x"] == x and c["y"] == y for c in collectible_manager.collectibles):
+                    collectible = next(c for c in collectible_manager.collectibles if c["x"] == x and c["y"] == y)
+                    row += collectible['icon']
+                else:
+                    row += self.game_data['empty']
             try:
-                for x in range(self.game_data['Board_Width']):
-                    if self.player_data["Player_Start"]["x"] == x and self.player_data["Player_Start"]["y"] == y:
-                        row += self.player_data['Player_Icon']
-                    elif any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle']):
-                        row += self.game_data['obstacle']
-                    elif any(e["x"] == x and e["y"] == y for e in self.game_data['Enemy']):
-                        enemy = next(e for e in self.game_data['Enemy'] if e["x"] == x and e["y"] == y)
-                        row += enemy['icon']
-                    elif any(c["x"] == x and c["y"] == y for c in self.collectibles):
-                        collectible = next(c for c in self.collectibles if c["x"] == x and c["y"] == y)
-                        row += collectible['icon']
-                    else:
-                        row += self.game_data['empty']
-                    try:
-                        stdscr.addstr(y, 0, row, curses.color_pair(1))
-                    except curses.error:
-                        pass
+                stdscr.addstr(y, 0, row, curses.color_pair(1))
             except curses.error:
-                pass    
-        try: 
-            stdscr.addstr(self.game_data["Board_Height"] + 1, 20, f"Score: {self.player_data['Player_Score']} ")
-            stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, Q to quit")    
-            stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {self.player_data['Player_Health']} ")
+                pass
+        try:
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 20, f"Score: {player.player_data['Player_Score']} ")
+            stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, Q to quit")
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Player_Health']} ")
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion']} ")
+        
         except curses.error:
             # My code is being weird and sometimes throws an error when trying to print the score/health. This is a workaround to prevent it from crashing.
-            pass  
-        stdscr.refresh()    
+            pass
+        stdscr.refresh()
 
-    def randomize_obstacles(self):
-        # Randomly place obstacles on the board, ensuring they don't overlap with the player or enemies
-        for obstacle in range(20):
-            while True:
-                x = random.randint(0, self.game_data["Board_Width"] - 1)
-                y = random.randint(0, self.game_data["Board_Height"] - 1)
-                if (x, y) != (self.player_data["Player_Start"]["x"], self.player_data["Player_Start"]["y"]) and not any(e["x"] == x and e["y"] == y for e in self.game_data['Enemy']):
-                    self.game_data['Obstacle'].append({'x': x, 'y': y})
-                    break
-    
-    def spawn_collectible(self):
-        if self.collectible_count >= 5:
-            return
-        # Spawn a collectible at a random position that is not an obstacle or enemy
-        x = random.randint(0, self.game_data["Board_Width"] - 1)
-        y = random.randint(0, self.game_data["Board_Height"] - 1)
-        if not self.check_obstacle_collision(x, y) and not self.check_enemy_on_enemy(x, y):
-            self.collectibles.append({'x': x, 'y': y, 'icon': self.game_data['ruppee']})
-            self.collectible_count += 1
-
-
-    
-
-
-
-# Use curses.wrapper with a callable that accepts the stdscr argument.
+    def randomize_obstacles(self, player, enemy_manager):
+        # Randomly place obstacles on the board, ensuring they don't overlap with the player, enemies, or other obstacles
+        self.game_data['Obstacle_data'].clear()
+        while len(self.game_data['Obstacle_data']) < 25:
+            x = random.randint(0, self.game_data["Board_Width"] - 1)
+            y = random.randint(0, self.game_data["Board_Height"] - 1)
+            # skip if player, any enemy, or an existing obstacle occupies this spot
+            if (x, y) == (player.player_data["Player_Start"]["x"], player.player_data["Player_Start"]["y"]):
+                continue
+            if any(e["x"] == x and e["y"] == y for e in enemy_manager.enemy_locations):
+                continue
+            if any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle_data']):
+                continue
+            obstacle_icon = random.choice([self.game_data['obstacle'], self.game_data['cactus']])
+            self.game_data['Obstacle_data'].append({'x': x, 'y': y, 'icon': obstacle_icon}) # 🌵
 
 class Player(): 
-    def __init__(self,player_name):
+    def __init__(self):
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
             'Weapon_Start' : {'x' : 3, 'y' : 10},
@@ -88,36 +79,59 @@ class Player():
             'Player_Score' : 0,
             'Player_Icon' : "\U0001F9DD", # 🧝
             'Player_Weapon' : 'sword',
+            'Health_Potion' : 3,
+            'Diangonals_Unlocked' : True,
+            'Damage_Reduction_Unlocked' : False
             }
-        self.player_name = player_name
     
-    def attack_enemy(self):
-        for enemy in self.game_data['Enemy']:
+    def attack_enemy(self, enemy_manager):
+        for enemy in enemy_manager.enemy_locations:
             if enemy['x'] == self.player_data['Player_Start']['x']+1 and enemy['y'] == self.player_data['Player_Start']['y']:
-                self.game_data['Enemy'].remove(enemy)
+                enemy_manager.enemy_locations.remove(enemy)
                 self.update_score(10)# Award points for defeating an enemy
-                self.enemy_count -= 1
+                enemy_manager.enemy_count -= 1
                 break  # Only attack one enemy at a time
             elif enemy['x'] == self.player_data['Player_Start']['x']-1 and enemy['y'] == self.player_data['Player_Start']['y']:
-                self.game_data['Enemy'].remove(enemy)
+                enemy_manager.enemy_locations.remove(enemy)
                 self.update_score(10)
-                self.enemy_count -= 1
+                enemy_manager.enemy_count -= 1
                 break
             elif enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']+1:
-                self.game_data['Enemy'].remove(enemy)
+                enemy_manager.enemy_locations.remove(enemy)
                 self.update_score(10)
-                self.enemy_count -= 1
+                enemy_manager.enemy_count -= 1
                 break
             elif enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']-1:
-                self.game_data['Enemy'].remove(enemy)
+                enemy_manager.enemy_locations.remove(enemy)
                 self.update_score(10)
-                self.enemy_count -= 1
+                enemy_manager.enemy_count -= 1
                 break
+            if self.player_data['Diangonals_Unlocked']:
+                if enemy['x'] == self.player_data['Player_Start']['x']+1 and enemy['y'] == self.player_data['Player_Start']['y']+1:
+                    enemy_manager.enemy_locations.remove(enemy)
+                    self.update_score(10)
+                    enemy_manager.enemy_count -= 1
+                    break
+                elif enemy['x'] == self.player_data['Player_Start']['x']-1 and enemy['y'] == self.player_data['Player_Start']['y']-1:
+                    enemy_manager.enemy_locations.remove(enemy)
+                    self.update_score(10)
+                    enemy_manager.enemy_count -= 1
+                    break
+                elif enemy['x'] == self.player_data['Player_Start']['x']+1 and enemy['y'] == self.player_data['Player_Start']['y']-1:
+                    enemy_manager.enemy_locations.remove(enemy)
+                    self.update_score(10)
+                    enemy_manager.enemy_count -= 1
+                    break
+                elif enemy['x'] == self.player_data['Player_Start']['x']-1 and enemy['y'] == self.player_data['Player_Start']['y']+1:
+                    enemy_manager.enemy_locations.remove(enemy)
+                    self.update_score(10)
+                    enemy_manager.enemy_count -= 1
+                    break
     
     def update_score(self, points):
         self.player_data["Player_Score"] += points
 
-    def move_player(self, direction):
+    def move_player(self, direction, enemy_manager, collectible_manager,game_type):
     # Update player position based on input direction, ensuring they stay within bounds and avoid obstacles
         new_x = self.player_data["Player_Start"]["x"]
         new_y = self.player_data["Player_Start"]["y"]
@@ -130,30 +144,35 @@ class Player():
         elif direction == 'd':  # Right
             new_x += 1
         elif direction == 'g':
-            self.attack_enemy()
+            self.attack_enemy(enemy_manager)
+            return
+        elif direction == 'h':  # Use health potion
+            if self.player_data['Health_Potion'] > 0 and self.player_data['Player_Health'] < 5:
+                self.player_data['Player_Health'] += 1
+                self.player_data['Health_Potion'] -= 1
             return
         # Check for boundaries
-        if self.check_obstacle_collision(new_x, new_y) == False:
+        if not check_obstacle_collision(new_x, new_y, game_type, interacter=self):
             self.player_data["Player_Start"]["x"] = new_x
             self.player_data["Player_Start"]["y"] = new_y
-            self.check_enemy_collision()
-            self.check_collectible_collision()
+            self.check_enemy_collision(enemy_manager)
+            self.check_collectible_collision(collectible_manager)
 
-    def check_enemy_collision(self):
+    def check_enemy_collision(self, enemy_manager):
     # Check if the player has collided with an enemy and update health/score accordingly
-        for enemy in self.game_data['Enemy']:
+        for enemy in enemy_manager.enemy_locations:
             if enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']:
                 self.player_data["Player_Health"] -= 1
                 return True  # Collision occurred
         return False  # No collision
 
-    def check_collectible_collision(self,collectible):
+    def check_collectible_collision(self,collectible_manager):
         # Check if the player has collided with a collectible and update score accordingly
-        for collectible in self.collectibles:
+        for collectible in collectible_manager.collectibles:
             if collectible['x'] == self.player_data['Player_Start']['x'] and collectible['y'] == self.player_data['Player_Start']['y']:
                 self.update_score(20)  # Award points for collecting an item
-                self.collectibles.remove(collectible)
-                self.collectible_count -= 1
+                collectible_manager.collectibles.remove(collectible)
+                collectible_manager.collectible_count -= 1
                 return True  # Collision occurred
         return False  # No collision
 
@@ -165,10 +184,15 @@ class Player():
 class Enemy():
     def __init__(self):
         self.enemy_count = 2
-        self.enemy_locations = [{'x': 5, 'y': 5, 'icon': "\U0001F9DF"}, # 🧟
-                            {'x': 15, 'y': 15, 'icon': "\U0001F480"}], # 💀
+        self.enemy_data = {
+            "enemy_types": ["skeleton", "zombie"],
+            "enemy_locations": [
+                {'x': 5, 'y': 5, 'icon': "\U0001F9DF"}, # 🧟
+                {'x': 15, 'y': 15, 'icon': "\U0001F480"}] # 💀
+        }
+        self.enemy_locations = self.enemy_data["enemy_locations"]
     
-    def move_enemies(self):
+    def move_enemies(self, player, game_type):
         # Move each enemy randomly in one of the four directions, ensuring they stay within bounds and downt run into obstacles. This function can be called after the player moves to create a more dynamic game environment.
         for enemy in self.enemy_locations[:]:  # Iterate over a copy to safely remove items
             direction = random.choice(['up', 'down', 'left', 'right'])
@@ -184,52 +208,60 @@ class Enemy():
                 new_x += 1
 
             # Check if enemy moves into player position
-            if new_x == self.player_data['Player_Start']['x'] and new_y == self.player_data['Player_Start']['y']:
-                self.player_data['Player_Health'] -= 1
-                self.game_data['Enemy'].remove(enemy)
+            if new_x == player.player_data['Player_Start']['x'] and new_y == player.player_data['Player_Start']['y']:
+                player.player_data['Player_Health'] -= 1
+                self.enemy_locations.remove(enemy)
                 self.enemy_count -= 1
             # Check for boundaries and obstacles
-            elif not self.check_obstacle_collision(new_x, new_y) and not self.check_enemy_on_enemy(new_x, new_y):
+            elif not check_obstacle_collision(new_x, new_y, game_type, interacter=self) and not self.check_enemy_on_enemy(new_x, new_y):
                 enemy['x'] = new_x
                 enemy['y'] = new_y
     
-    def spawn_enemy(self):
+    def spawn_enemy(self, game_type):
         if self.enemy_count >= 7:
             return
         # added a random chance to spawn an enemy each turn, and a limit on the total number of enemies that can be present at once.
         if random.random() > 0.3:
             return        
         # Spawn an enemy at a random position that is not an obstacle
-        x = random.randint(0, self.game_data["Board_Width"] - 1)
-        y = random.randint(0, self.game_data["Board_Height"] - 1)
-        if not self.check_obstacle_collision(x, y):
-            random_enemy_icon = random.choice([self.game_data['skeleton'], self.game_data['zombie']])
-            self.game_data['Enemy'].append({'x': x, 'y': y, 'icon': random_enemy_icon})
+        x = random.randint(0, game_type.game_data["Board_Width"] - 1)
+        y = random.randint(0, game_type.game_data["Board_Height"] - 1)
+        if not check_obstacle_collision(x, y, game_type) and not self.check_enemy_on_enemy(x, y):
+            random_enemy_icon = random.choice([game_type.game_data['skeleton'], game_type.game_data['zombie']])
+            self.enemy_locations.append({'x': x, 'y': y, 'icon': random_enemy_icon})
             self.enemy_count += 1
     
     def check_enemy_on_enemy(self, x, y):
         # Check if the position (x, y) is occupied by an enemy
-        for enemy in self.game_data['Enemy']:
+        for enemy in self.enemy_locations:
             if enemy['x'] == x and enemy['y'] == y:
                 return True  # Collision with another enemy
         return False  # No collision with another enemy
 
-class Colectible():
+class Collectible():
     def __init__(self):
         self.collectibles = []
-        self.collectible_count = 0    
+        self.collectible_count = 0  
 
-def play_game(stdscr,game_type,player):
+    def spawn_collectible(self, game_type,enemy_manager):
+        if self.collectible_count >= 5:
+            return
+        # Spawn a collectible at a random position that is not an obstacle or enemy
+        x = random.randint(0, game_type.game_data["Board_Width"] - 1)
+        y = random.randint(0, game_type.game_data["Board_Height"] - 1)
+        if not check_obstacle_collision(x, y, game_type) and not enemy_manager.check_enemy_on_enemy(x, y):
+            self.collectibles.append({'x': x, 'y': y, 'icon': game_type.game_data['ruppee']})
+            self.collectible_count += 1
+
+def play_game(stdscr,game_type,player,enemy_manager,collectible_manager):
         # Main game loop to handle player input, update game state, and redraw the board
-        game_type.randomize_obstacles()
+        game_type.randomize_obstacles(player, enemy_manager)
 
-        game_type.spawn_collectible()
+        collectible_manager.spawn_collectible(game_type,enemy_manager)
 
         welcome_player(stdscr) 
         
-        # 254 like the cheesy poofs         
-
-        game_type.draw_board(stdscr)
+        game_type.draw_board(stdscr, enemy_manager, collectible_manager,player)
 
         stdscr.nodelay(False)
 
@@ -243,11 +275,11 @@ def play_game(stdscr,game_type,player):
             if key.lower() == 'q':
                 break
             
-            player.move_player(key.lower())
-            move_enemies()
-            spawn_enemy()
-            spawn_collectible()
-            draw_board(stdscr)
+            player.move_player(key.lower(), enemy_manager, collectible_manager, game_type)
+            enemy_manager.move_enemies(player,game_type)
+            enemy_manager.spawn_enemy(game_type)
+            collectible_manager.spawn_collectible(game_type,enemy_manager)
+            game_type.draw_board(stdscr, enemy_manager, collectible_manager,player)
         while True:
             stdscr.clear()
             stdscr.addstr(10, 10, f"Game Over! Final Score: {player.player_data['Player_Score']}")
@@ -258,31 +290,50 @@ def play_game(stdscr,game_type,player):
             except curses.error:
                 key = None
             if key.lower() == 'n':
-                game_type.__init__()  # Reset the game state
-                play_game(stdscr, game_type, player)  # Restart the game loop
+                # reinitialize game objects so state is clean
+                player.__init__()
+                game_type.__init__()
+                enemy_manager.__init__()
+                collectible_manager.__init__()
+                play_game(stdscr, game_type, player, enemy_manager, collectible_manager)
                 break
             elif key.lower() == 'q':
                 break
 
 def welcome_player(stdscr):
-        stdscr.clear()
-        stdscr.addstr(10, 10, "Welcome to the Adventure Game!")
-        stdscr.addstr(11, 10, "Move with W/A/S/D, Press G to attack, Q to quit")
-        stdscr.addstr(12, 10, "Defeat enemies and survive as long as you can!")
-        stdscr.refresh()
-        stdscr.getch()  # Wait for player to press a key
+        # stdscr.clear()
+        # stdscr.addstr(10, 10, "Welcome to the Adventure Game!")
+        # stdscr.addstr(11, 10, "Move with W/A/S/D, Press G to attack, Q to quit")
+        # stdscr.addstr(12, 10, "Defeat enemies and survive as long as you can!")
+        # stdscr.refresh()
+        # stdscr.getch()  # Wait for player to press a key
+        pass
 
-def check_obstacle_collision(x,y):
-    # Check if the position (x, y) is an obstacle
-    if x < 0 or x >= adventure_game.game_data["Board_Width"] or y < 0 or y >= adventure_game.game_data["Board_Height"]:
-        return True  # Collision with wall
-    for obstacle in adventure_game.game_data['Obstacle']:
+def check_obstacle_collision(x, y, game, interacter=None):
+    # Check if the position (x, y) is out of bounds or occupied by an obstacle
+    if x < 0 or x >= game.game_data["Board_Width"] or y < 0 or y >= game.game_data["Board_Height"]:
+        return True
+    for obstacle in game.game_data['Obstacle_data']:
         if obstacle['x'] == x and obstacle['y'] == y:
-            return True  # Collision detected
-    return False  # No collision
+            if obstacle['icon'] == game.game_data['cactus'] and interacter is not None:  # If it's a cactus and we have an interacter (player or enemy)
+                if isinstance(interacter, Player):
+                    interacter.player_data['Player_Health'] -= 1  # Cacti deal damage on collision
+                elif isinstance(interacter, Enemy):
+                    pass
+            return True
+    return False
+
+class Shop():
+    def __init__(self):
+        self.items = {
+            'Range Upgrade': {'cost': 50, 'description': 'Attack enemies on a diagonal'},
+            'Damage Reduction': {'cost': 75, 'description': 'Take less damage from enemies'},
+            'Health Potion': {'cost': 30, 'description': 'Restore 1 health points'},
+        }
 
 
-player_one = Player(input("What is your name?"))
+player_one = Player()
 adventure_game = Game()
-
-curses.wrapper(play_game, adventure_game, player_one)
+enemy_manager = Enemy()
+collectible_manager = Collectible()
+curses.wrapper(play_game, adventure_game, player_one, enemy_manager, collectible_manager)
