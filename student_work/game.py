@@ -277,6 +277,55 @@ class Collectible():
             self.collectibles.append({'x': x, 'y': y, 'icon': game_type.game_data['ruppee']})
             self.collectible_count += 1
 
+class Shop():
+    def __init__(self):
+        self.items = {
+            'Damage Reduction': {'cost': 175, 'description': 'Take less damage from enemies', 'icon': "\U0001F6E1"}, # 🛡
+            'Health Potion': {'cost': 300, 'description': 'Restore 1 health points', 'icon': "\U0001F9C0"}, # 🧃
+            'Aoe Attack': {'cost': 350, 'description': 'Attack all adjacent enemies', 'icon': "\U0001F32A"}, # 🌪
+        }
+        
+        self.shop_data = {
+            'icon': "\U0001F3EA", # 🏪
+            'x' : 24,
+            'y' : 19
+        }
+    
+    def interact_with_shop(self, player, stdscr):
+        stdscr.clear()
+        stdscr.addstr(1,1, "Welcome to my shop! You may browse my wares and obtain items to aid you in your deadly travles.")
+        stdscr.addstr(2,1, f"You have {player.player_data['Player_Score']} rupees.")
+        stdscr.addstr(4,1, "Items for sale:")
+        for i, (item_name, item_info) in enumerate(self.items.items(), start=1):
+            stdscr.addstr(5+i, 3, f"{i}. {item_info['icon']} {item_name} - {item_info['cost']} rupees")
+            stdscr.addstr(5+i, 40, f"{item_info['description']}")
+        stdscr.addstr(11,1, "Press the number of the item you wish to purchase, or B to exit the shop.")
+        stdscr.refresh()
+        while True:            
+            try:
+                key = stdscr.getkey()
+            except curses.error:
+                key = None
+            if key.lower() == 'b':
+                break   
+            elif key in ['1', '2', '3']:
+                item_index = int(key) - 1
+                if item_index < len(self.items):
+                    item_name = list(self.items.keys())[item_index]
+                    item_info = self.items[item_name]
+                    if player.player_data['Player_Score'] >= item_info['cost']:
+                        player.player_data['Player_Score'] -= item_info['cost']
+                        if item_name == 'Damage Reduction':
+                            player.player_data['Damage_Reduction_Unlocked'] = True
+                        elif item_name == 'Health Potion':
+                            player.player_data['Health_Potion'] += 1
+                        elif item_name == 'Aoe Attack':
+                            player.player_data['Aoe_Attack_Unlocked'] = True
+                        stdscr.addstr(17,1, f"You purchased {item_name}!")
+                    else:
+                        stdscr.addstr(17,1, "You don't have enough rupees for that item.")
+                    stdscr.refresh()
+
 def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_manager):
         # Main game loop to handle player input, update game state, and redraw the board
         game_type.randomize_obstacles(player, enemy_manager)
@@ -345,54 +394,6 @@ def check_obstacle_collision(x, y, game, interacter=None):
                     pass
             return True
     return False
-
-class Shop():
-    def __init__(self):
-        self.items = {
-            'Damage Reduction': {'cost': 175, 'description': 'Take less damage from enemies', 'icon': "\U0001F6E1"}, # 🛡
-            'Health Potion': {'cost': 300, 'description': 'Restore 1 health points', 'icon': "\U0001F9C0"}, # 🧃
-            'Aoe Attack': {'cost': 350, 'description': 'Attack all adjacent enemies', 'icon': "\U0001F32A"}, # 🌪
-        }
-        
-        self.shop_data = {
-            'icon': "\U0001F3EA", # 🏪
-            'x' : 24,
-            'y' : 19
-        }
-    def interact_with_shop(self, player, stdscr):
-        stdscr.clear()
-        stdscr.addstr(1,1, "Welcome to my shop! You may browse my wares and obtain items to aid you in your deadly travles.")
-        stdscr.addstr(2,1, f"You have {player.player_data['Player_Score']} rupees.")
-        stdscr.addstr(4,1, "Items for sale:")
-        for i, (item_name, item_info) in enumerate(self.items.items(), start=1):
-            stdscr.addstr(5+i, 3, f"{i}. {item_info['icon']} {item_name} - {item_info['cost']} rupees")
-            stdscr.addstr(5+i, 40, f"{item_info['description']}")
-        stdscr.addstr(11,1, "Press the number of the item you wish to purchase, or B to exit the shop.")
-        stdscr.refresh()
-        while True:            
-            try:
-                key = stdscr.getkey()
-            except curses.error:
-                key = None
-            if key.lower() == 'b':
-                break   
-            elif key in ['1', '2', '3']:
-                item_index = int(key) - 1
-                if item_index < len(self.items):
-                    item_name = list(self.items.keys())[item_index]
-                    item_info = self.items[item_name]
-                    if player.player_data['Player_Score'] >= item_info['cost']:
-                        player.player_data['Player_Score'] -= item_info['cost']
-                        if item_name == 'Damage Reduction':
-                            player.player_data['Damage_Reduction_Unlocked'] = True
-                        elif item_name == 'Health Potion':
-                            player.player_data['Health_Potion'] += 1
-                        elif item_name == 'Aoe Attack':
-                            player.player_data['Aoe_Attack_Unlocked'] = True
-                        stdscr.addstr(17,1, f"You purchased {item_name}!")
-                    else:
-                        stdscr.addstr(17,1, "You don't have enough rupees for that item.")
-                    stdscr.refresh()
 
 shop_manager = Shop()
 player_one = Player()
