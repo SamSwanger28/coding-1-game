@@ -45,9 +45,9 @@ class Game():
                 pass
         try:
             stdscr.addstr(self.game_data["Board_Height"] + 1, 20, f"Score: {player.player_data['Player_Score']} ")
-            stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, Q to quit")
+            stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, H to heal, B to shop when by the shop, Q to quit")
             stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Player_Health']} ")
-            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion']} ")
+            stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion'],}")
         
         except curses.error:
             # My code is being weird and sometimes throws an error when trying to print the score/health. This is a workaround to prevent it from crashing.
@@ -151,6 +151,8 @@ class Player():
                 self.player_data['Player_Health'] += 1
                 self.player_data['Health_Potion'] -= 1
             return
+        elif direction == 'b':  # Interact with shop
+            pass
         # Check for boundaries
         if not check_obstacle_collision(new_x, new_y, game_type, interacter=self):
             self.player_data["Player_Start"]["x"] = new_x
@@ -259,7 +261,7 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager):
 
         collectible_manager.spawn_collectible(game_type,enemy_manager)
 
-        welcome_player(stdscr) 
+        # welcome_player(stdscr) 
         
         game_type.draw_board(stdscr, enemy_manager, collectible_manager,player)
 
@@ -301,13 +303,12 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager):
                 break
 
 def welcome_player(stdscr):
-        # stdscr.clear()
-        # stdscr.addstr(10, 10, "Welcome to the Adventure Game!")
-        # stdscr.addstr(11, 10, "Move with W/A/S/D, Press G to attack, Q to quit")
-        # stdscr.addstr(12, 10, "Defeat enemies and survive as long as you can!")
-        # stdscr.refresh()
-        # stdscr.getch()  # Wait for player to press a key
-        pass
+        stdscr.clear()
+        stdscr.addstr(10, 10, "Welcome to the Adventure Game!")
+        stdscr.addstr(11, 10, "Move with W/A/S/D, Press G to attack,H to heal, B to shop when by the shop, Q to quit")
+        stdscr.addstr(12, 10, "Defeat enemies and survive as long as you can!")
+        stdscr.refresh()
+        stdscr.getch()  # Wait for player to press a key
 
 def check_obstacle_collision(x, y, game, interacter=None):
     # Check if the position (x, y) is out of bounds or occupied by an obstacle
@@ -326,12 +327,19 @@ def check_obstacle_collision(x, y, game, interacter=None):
 class Shop():
     def __init__(self):
         self.items = {
-            'Range Upgrade': {'cost': 50, 'description': 'Attack enemies on a diagonal'},
-            'Damage Reduction': {'cost': 75, 'description': 'Take less damage from enemies'},
-            'Health Potion': {'cost': 30, 'description': 'Restore 1 health points'},
+            'Range Upgrade': {'cost': 50, 'description': 'Attack enemies on a diagonal', 'icon': "\U0001F50D"}, # 🔍
+            'Damage Reduction': {'cost': 75, 'description': 'Take less damage from enemies', 'icon': "\U0001F6E1"}, # 🛡
+            'Health Potion': {'cost': 30, 'description': 'Restore 1 health points', 'icon': "\U0001F9C0"}, # 🧃
+        }
+        
+        self.shop_data = {
+            'Shop_Icon': "\U0001F3EA", # 🏪
+            'x' : random.randint(0, 24),
+            'y' : random.randint(0, 19)
         }
 
 
+shop_manager = Shop()
 player_one = Player()
 adventure_game = Game()
 enemy_manager = Enemy()
