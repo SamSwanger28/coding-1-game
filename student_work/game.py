@@ -49,7 +49,10 @@ class Game():
         try:
             stdscr.addstr(self.game_data["Board_Height"] + 1, 20, f"Score: {player.player_data['Player_Score']} ")
             stdscr.addstr(self.game_data["Board_Height"] + 2, 1, "Move with W/A/S/D, Press G to attack, H to heal, B to shop when by the shop, Q to quit")
-            stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Player_Health']} ")
+            if player.player_data['Player_Health'] % 1 == 0:
+                stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Health_Icon']*int(player.player_data['Player_Health'])} ")
+            elif player.player_data['Player_Health'] % 1 != 0:
+                stdscr.addstr(self.game_data["Board_Height"] + 1, 1, f"Health: {player.player_data['Health_Icon']*(int(str(player.player_data['Player_Health'])[0]))}{player.player_data['Half_Health_Icon']} ")
             stdscr.addstr(self.game_data["Board_Height"] + 1, 35, f"Health Potions: {player.player_data['Health_Potion']}")      
             stdscr.addstr(self.game_data["Board_Height"] + 1, 60, f"Mana: {player.player_data['Player_Mana']} {player.player_data['Mana_Icon']*player.player_data['Player_Mana']}")  
         except curses.error:
@@ -79,14 +82,15 @@ class Player():
             'Player_Start' : {'x' : 2,'y' : 10},
             'Weapon_Start' : {'x' : 3, 'y' : 10},
             'Player_Health' : 5,
+            'Health_Icon' : "\U00002764 ", # ❤
+            'Half_Health_Icon' : "\U0001F494 ", #💔
             'Player_Score' : 0,
             'Player_Icon' : "\U0001F9DD ", # 🧝
-            'Player_Weapon' : 'sword',
             'Health_Potion' : 3,
             'Player_Mana' : 6,
             'Mana_Icon' : "\U0001F7E6 ", # 🟦
-            'Damage_Reduction_Unlocked' : False,
-            'Aoe_Attack_Unlocked' : True
+            'Damage_Reduction_Unlocked' : True,
+            'Aoe_Attack_Unlocked' : False
             }
         self.pow_icon = "\U0001F4A5 " # 💥
         self.aoe_icon = "\U0001F32A " # 🌪
@@ -145,9 +149,7 @@ class Player():
             self.attack_enemy(enemy_manager,new_x,new_y,stdscr)
             return
         elif direction == 'h':  # Use health potion
-            if self.player_data['Health_Potion'] > 0 and self.player_data['Player_Health'] < 5:
-                self.player_data['Player_Health'] += 1
-                self.player_data['Health_Potion'] -= 1
+            self.heal()
             return
         elif direction == 'b':  # Interact with shop
             # only allow shopping when standing on the shop location
@@ -164,6 +166,14 @@ class Player():
             self.player_data["Player_Start"]["y"] = new_y
             self.check_enemy_collision(enemy_manager)
             self.check_collectible_collision(collectible_manager)
+
+    def heal(self):
+         if self.player_data['Health_Potion'] > 0 and self.player_data['Player_Health'] < 5:
+                if self.player_data['Player_Health'] == 4.5:  # If player has half health, one potion will bring them to full health
+                    self.player_data['Player_Health'] = 5
+                else:
+                    self.player_data['Player_Health'] += 1
+                    self.player_data['Health_Potion'] -= 1
 
     def check_enemy_collision(self, enemy_manager):
     # Check if the player has collided with an enemy and update health/score accordingly
@@ -389,7 +399,10 @@ def check_obstacle_collision(x, y, game, interacter=None):
         if obstacle['x'] == x and obstacle['y'] == y:
             if obstacle['icon'] == game.game_data['cactus'] and interacter is not None:  # If it's a cactus and we have an interacter (player or enemy)
                 if isinstance(interacter, Player):
-                    interacter.player_data['Player_Health'] -= 1  # Cacti deal damage on collision
+                    if interacter.player_data['Damage_Reduction_Unlocked']:
+                        interacter.player_data['Player_Health'] -= 0.5  # Cacti deal half damage if damage reduction is unlocked
+                    else:
+                        interacter.player_data['Player_Health'] -= 1  # Cacti deal damage on collision
                 elif isinstance(interacter, Enemy):
                     pass
             return True
