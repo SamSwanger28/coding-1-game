@@ -58,3 +58,6 @@ And having weapons were making some aspects of gameplay clunky
 Next i want to add a store where you can spend points to upgrade health and attack range and maybe a point mulitplyer
 Another cool thing to add would be enimeis with more health
 one way i would do this is make an enemy class where eniemies store health and other info in their class info
+
+Lowkey like 2056's crecendo robot i want to add health and and knock back to enimies and also ummmmmmm seprerate enimies into subclassses
+Henrey lowket you should figure out knock back idr want to tbh
