@@ -89,7 +89,7 @@ class Player():
             'Health_Potion' : 3,
             'Player_Mana' : 6,
             'Mana_Icon' : "\U0001F7E6 ", # 🟦
-            'Damage_Reduction_Unlocked' : True,
+            'Damage_Reduction_Unlocked' : False,
             'Aoe_Attack_Unlocked' : False
             }
         self.pow_icon = "\U0001F4A5 " # 💥
@@ -243,7 +243,11 @@ class Enemy():
 
             # Check if enemy moves into player position
             if new_x == player.player_data['Player_Start']['x'] and new_y == player.player_data['Player_Start']['y']:
-                player.player_data['Player_Health'] -= 1
+                if player.player_data['Damage_Reduction_Unlocked']: 
+                    player.player_data['Player_Health'] -= 0.5  # Reduce damage by half if damage reduction is unlocked
+                else:
+                
+                    player.player_data['Player_Health'] -= 1
                 self.enemy_locations.remove(enemy)
                 self.enemy_count -= 1
             # Check for boundaries and obstacles
