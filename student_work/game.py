@@ -3,6 +3,10 @@ import curses
 import random
 import time
 
+leader_board = {
+    }
+
+
 class Game():
     def __init__(self):
         self.game_data = {
@@ -18,6 +22,7 @@ class Game():
     'skeleton' : "\U0001F480", # 💀
     'zombie': "\U0001F9DF", # 🧟  
     'ruppee' : "\U0001F48E", # 💎
+    'key' : "\U0001F511" # 🔑
     }
 
     def draw_board(self, stdscr, enemy_manager, collectible_manager, player, shop_manager):
@@ -77,7 +82,8 @@ class Game():
             self.game_data['Obstacle_data'].append({'x': x, 'y': y, 'icon': obstacle_icon}) # 🌵
 
 class Player(): 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
             'Weapon_Start' : {'x' : 3, 'y' : 10},
@@ -87,7 +93,7 @@ class Player():
             'Player_Score' : 0,
             'Player_Icon' : "\U0001F9DD ", # 🧝
             'Health_Potion' : 3,
-            'Player_Mana' : 6,
+            'Player_Mana' : 0,
             'Mana_Icon' : "\U0001F7E6 ", # 🟦
             'Damage_Reduction_Unlocked' : False,
             'Aoe_Attack_Unlocked' : False
@@ -280,9 +286,9 @@ class Collectible():
     def __init__(self):
         self.collectibles = []
         self.collectible_count = 0  
-
+        self.max_collectibles = 5  # Limit the number of collectibles on the board at once
     def spawn_collectible(self, game_type,enemy_manager):
-        if self.collectible_count >= 5:
+        if self.collectible_count >= self.max_collectibles:
             return
         # Spawn a collectible at a random position that is not an obstacle or enemy
         x = random.randint(0, game_type.game_data["Board_Width"] - 1)
@@ -371,13 +377,18 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
             stdscr.clear()
             stdscr.addstr(10, 10, f"Game Over! Final Score: {player.player_data['Player_Score']}")
             stdscr.addstr(11, 10, "Press N to start a new game or Q to quit.")
+            leader_board.update({player.name: player.player_data['Player_Score']})
+            leader_board_sorted = dict(sorted(leader_board.items(), key=lambda item: item[1], reverse=True))
+            stdscr.addstr(13, 10, "Leader Board:")
+            for i, (name, score) in enumerate(leader_board_sorted.items(), start=1):
+                stdscr.addstr(13+i, 12, f"{i}. {name} - {score} rupees")
             stdscr.refresh()
             try:
                 key = stdscr.getkey()
             except curses.error:
                 key = None
             if key.lower() == 'n':
-                # reinitialize game objects so state is clean
+                # reinitialize game objects so state is clean for the new game
                 player.__init__()
                 game_type.__init__()
                 enemy_manager.__init__()
@@ -412,8 +423,20 @@ def check_obstacle_collision(x, y, game, interacter=None):
             return True
     return False
 
+class Zombie(Enemy):
+    def __init__(self):
+        super().__init__()
+        self.enemy_data = {
+            "enemy_types": ["zombie"],
+            "enemy_locations": [
+                {'x': 5, 'y': 5, 'icon': "\U0001F9DF",'hp': 3}, # 🧟
+                {'x': 15, 'y': 15, 'icon': "\U0001F9DF",'hp': 3}] # 🧟
+        }
+        self.enemy_locations = self.enemy_data["enemy_locations"]
+
+zombie_manager = Zombie()
 shop_manager = Shop()
-player_one = Player()
+player_one = Player(input("Enter your name, brave adventurer: "))
 adventure_game = Game()
 enemy_manager = Enemy()
 collectible_manager = Collectible()
