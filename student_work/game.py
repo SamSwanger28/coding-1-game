@@ -2,10 +2,18 @@
 import curses
 import random
 import time
-
+moves_allowed = 100 
 leader_board = {
     }
 
+if enemy_killed == True:
+    moves allowed += 1
+if item picked up == True
+    moves alloed += 1 
+if score >= 500
+    moves_allowed -= 5
+elif score in range(150,300)
+moves_allowed -= 3
 
 class Game():
     def __init__(self):
