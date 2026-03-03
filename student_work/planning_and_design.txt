@@ -61,3 +61,7 @@ one way i would do this is make an enemy class where eniemies store health and o
 
 Lowkey like 2056's crecendo robot i want to add health and and knock back to enimies and also ummmmmmm seprerate enimies into subclassses
 Henrey lowket you should figure out knock back idr want to tbh
+
+
+add time as a win/loss parameter but make so as you get higher score time move faster recover 1 time from enemy dying and from ruppee pick up
+remove time when player take damage more time removed if player has damage reduction
