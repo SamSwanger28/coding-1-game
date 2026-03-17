@@ -251,7 +251,7 @@ class Enemy():
         elif direction == 'down':  # Down
             new_y += 1
         elif direction == 'left':  # Left
-            new_x -= 1
+            new_x -= 1 #line 254 hey like the chessy poofs from san jose california 
         elif direction == 'right':  # Right
             new_x += 1
 
