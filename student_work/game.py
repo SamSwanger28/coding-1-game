@@ -346,7 +346,7 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
 
         collectible_manager.spawn_collectible(game_type,enemy_manager)
 
-        # welcome_player(stdscr) 
+        welcome_player(stdscr) 
         
         game_type.draw_board(stdscr, enemy_manager, collectible_manager,player,shop_manager)
 
