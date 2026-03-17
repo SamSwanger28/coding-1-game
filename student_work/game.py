@@ -81,9 +81,7 @@ class Game():
             self.game_data['Obstacle_data'].append({'x': x, 'y': y, 'icon': obstacle_icon}) # 🌵
 
 class Player(): 
-    def __init__(self, name):
-        self.moves_allowed = 100
-        self.name = name
+    def __init__(self):        
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
             'Weapon_Start' : {'x' : 3, 'y' : 10},
@@ -101,19 +99,20 @@ class Player():
         self.pow_icon = "\U0001F4A5 " # 💥
         self.aoe_icon = "\U0001F32A " # 🌪
     
-    def attack_enemy(self, enemy_manager, x, y, stdscr):
+    def attack_enemy(self, enemy_manager, x, y, stdscr, game_type):
         for enemy in list_o_enemies[:]:
             for i in range(x - 1, x + 2):
                 for j in range(y - 1, y + 2):
                     if enemy.enemy_location['x'] == i and enemy.enemy_location['y'] == j:
                         self.spawn_pow_effect(stdscr, enemy.enemy_location['x'], enemy.enemy_location['y'])
-                        self.knock_back_enemy(x, y, enemy)
+                        self.knock_back_enemy(x, y, enemy, game_type)
                         enemy.health -= 1
                         enemy.stuned = True
                         if enemy.health <= 0:
                             list_o_enemies.remove(enemy)
-                        self.update_score(10)  # Award points for defeating an enemy
-                        self.add_mana()  # Gain mana for each enemy defeated
+                            self.add_mana()
+                            self.update_score(10)  # Award points for defeating an enemy
+
 
     def spawn_pow_effect(self, stdscr, x, y):
         stdscr.addstr(y, x*2, self.pow_icon)  # Draw the pow icon at the enemy's position (x*2 because each cell is 2 characters wide)
@@ -154,7 +153,7 @@ class Player():
         elif direction == 'd':  # Right
             new_x += 1
         elif direction == 'g':
-            self.attack_enemy(enemy_manager,new_x,new_y,stdscr)
+            self.attack_enemy(enemy_manager,new_x,new_y,stdscr,game_type)
             return
         elif direction == 'h':  # Use health potion
             self.heal()
@@ -183,30 +182,16 @@ class Player():
                     self.player_data['Player_Health'] += 1
                     self.player_data['Health_Potion'] -= 1
 
-    def knock_back_enemy(self,x,y, enemy):
-        if enemy.enemy_location['x'] > x and enemy.enemy_location['y'] > y:
-            enemy.enemy_location['x'] += 1
-            enemy.enemy_location['y'] += 1
-        elif enemy.enemy_location['x'] > x and enemy.enemy_location['y'] == y:
-            enemy.enemy_location['x'] += 1
-        elif enemy.enemy_location['x'] > x and enemy.enemy_location['y'] < y:
-            enemy.enemy_location['x'] += 1
-            enemy.enemy_location['y'] -= 1
-        elif enemy.enemy_location['x'] == x and enemy.enemy_location['y'] < y:
-            enemy.enemy_location['y'] -= 1
-        elif enemy.enemy_location['x'] < x and enemy.enemy_location['y'] < y:
-            enemy.enemy_location['x'] -= 1
-            enemy.enemy_location['y'] -= 1
-        elif enemy.enemy_location['x'] < x and enemy.enemy_location['y'] == y:
-            enemy.enemy_location['x'] -= 1
-        elif enemy.enemy_location['x'] < x and enemy.enemy_location['y'] > y:
-            enemy.enemy_location['x'] -= 1
-            enemy.enemy_location['y'] += 1
-        elif enemy.enemy_location['x'] == x and enemy.enemy_location['y'] > y:
-            enemy.enemy_location['y'] += 1 
-           
-    def check_enemy_collision(self, enemy_manager):
+    def knock_back_enemy(self, x, y, enemy, game_type):
+        # Calculate knockback direction and apply, clamped to board boundaries
+        new_x = enemy.enemy_location['x'] + (1 if enemy.enemy_location['x'] > x else -1 if enemy.enemy_location['x'] < x else 0)
+        new_y = enemy.enemy_location['y'] + (1 if enemy.enemy_location['y'] > y else -1 if enemy.enemy_location['y'] < y else 0)
+        if not check_obstacle_collision(new_x, new_y, game_type):  # Check if the new position collides with an obstacle. If it does, the enemy won't be knocked back.
+            # Clamp to board boundaries
+            enemy.enemy_location['x'] = new_x
+            enemy.enemy_location['y'] = new_y
     # Check if the player has collided with an enemy and update health/score accordingly
+    def check_enemy_collision(self, enemy_manager):
         for enemy in list_o_enemies:
             if enemy.enemy_location['x'] == self.player_data['Player_Start']['x'] and enemy.enemy_location['y'] == self.player_data['Player_Start']['y']:
                 if self.player_data['Damage_Reduction_Unlocked']:
@@ -385,9 +370,11 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
             game_type.draw_board(stdscr, enemy_manager, collectible_manager,player,shop_manager)
         while True:
             stdscr.clear()
+            name = get_player_name(stdscr)
+            stdscr.clear()
             stdscr.addstr(10, 10, f"Game Over! Final Score: {player.player_data['Player_Score']}")
             stdscr.addstr(11, 10, "Press N to start a new game or Q to quit.")
-            leader_board.update({player.name: player.player_data['Player_Score']})
+            leader_board.update({name: player.player_data['Player_Score']})
             leader_board_sorted = dict(sorted(leader_board.items(), key=lambda item: item[1], reverse=True))
             stdscr.addstr(13, 10, "Leader Board:")
             for i, (name, score) in enumerate(leader_board_sorted.items(), start=1):
@@ -401,12 +388,22 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
                 # reinitialize game objects so state is clean for the new game
                 player.__init__()
                 game_type.__init__()
-                enemy_manager.__init__()
                 collectible_manager.__init__()
+                list_o_enemies.clear()
                 play_game(stdscr, game_type, player, enemy_manager, collectible_manager, shop_manager)
                 break
             elif key.lower() == 'q':
                 break
+
+def get_player_name(stdscr):
+    stdscr.clear()
+    stdscr.addstr(10, 10, "That was a tough run!")
+    stdscr.addstr(11, 10, "Please enter your name for the Leader Board: ")
+    stdscr.refresh()
+    curses.echo()  # Enable echoing of characters as the player types
+    name = stdscr.getstr(12, 35, 20).decode('utf-8')  # Get player input for name
+    curses.noecho()  # Disable echoing after getting the name
+    return name
 
 def welcome_player(stdscr):
         stdscr.clear()
@@ -455,7 +452,7 @@ def spawn_enemy(game_type):
             list_o_enemies.append(monster)   
 
 shop_manager = Shop()
-player_one = Player(input("Enter your name, brave adventurer: "))
+player_one = Player()
 adventure_game = Game()
 enemy_manager = Enemy(None,None,None)
 collectible_manager = Collectible()
