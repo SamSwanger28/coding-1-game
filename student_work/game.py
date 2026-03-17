@@ -2,7 +2,6 @@
 import curses
 import random
 import time
-moves_allowed = 100 
 leader_board = {
     }
 list_o_enemies = []
@@ -37,9 +36,9 @@ class Game():
                 elif any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle_data']):
                     obstacle = next(o for o in self.game_data['Obstacle_data'] if o["x"] == x and o["y"] == y)
                     row += obstacle['icon']
-                elif any(e["x"] == x and e["y"] == y for e in enemy_manager.enemy_locations):
-                    enemy = next(e for e in enemy_manager.enemy_locations if e["x"] == x and e["y"] == y)
-                    row += enemy['icon']
+                elif any(e.enemy_location["x"] == x and e.enemy_location["y"] == y for e in list_o_enemies):
+                    enemy = next(e for e in list_o_enemies if e.enemy_location["x"] == x and e.enemy_location["y"] == y)
+                    row += enemy.icon
                 elif any(c["x"] == x and c["y"] == y for c in collectible_manager.collectibles):
                     collectible = next(c for c in collectible_manager.collectibles if c["x"] == x and c["y"] == y)
                     row += collectible['icon']
@@ -74,7 +73,7 @@ class Game():
             # skip if player, any enemy, or an existing obstacle occupies this spot
             if (x, y) == (player.player_data["Player_Start"]["x"], player.player_data["Player_Start"]["y"]):
                 continue
-            if any(e["x"] == x and e["y"] == y for e in enemy_manager.enemy_locations):
+            if any(e.enemy_location["x"] == x and e.enemy_location["y"] == y for e in list_o_enemies):
                 continue
             if any(o["x"] == x and o["y"] == y for o in self.game_data['Obstacle_data']):
                 continue
@@ -103,15 +102,16 @@ class Player():
         self.aoe_icon = "\U0001F32A " # 🌪
     
     def attack_enemy(self, enemy_manager, x, y, stdscr):
-        for enemy in enemy_manager.enemy_locations:
+        for enemy in list_o_enemies[:]:
             for i in range(x - 1, x + 2):
                 for j in range(y - 1, y + 2):
-                    if enemy['x'] == i and enemy['y'] == j:
-                        self.spawn_pow_effect(stdscr, enemy['x'], enemy['y'])
-                        self.knock_back_enemy(enemy)
-                        self.add_moves('enemy')
-                        enemy_manager.enemy_locations.remove(x,y,enemy)
-                        enemy_manager.enemy_count -= 1
+                    if enemy.enemy_location['x'] == i and enemy.enemy_location['y'] == j:
+                        self.spawn_pow_effect(stdscr, enemy.enemy_location['x'], enemy.enemy_location['y'])
+                        self.knock_back_enemy(x, y, enemy)
+                        enemy.health -= 1
+                        enemy.stuned = True
+                        if enemy.health <= 0:
+                            list_o_enemies.remove(enemy)
                         self.update_score(10)  # Award points for defeating an enemy
                         self.add_mana()  # Gain mana for each enemy defeated
 
@@ -174,7 +174,6 @@ class Player():
             self.player_data["Player_Start"]["y"] = new_y
             self.check_enemy_collision(enemy_manager)
             self.check_collectible_collision(collectible_manager)
-            self.reduce_moves()
 
     def heal(self):
          if self.player_data['Health_Potion'] > 0 and self.player_data['Player_Health'] < 5:
@@ -185,16 +184,31 @@ class Player():
                     self.player_data['Health_Potion'] -= 1
 
     def knock_back_enemy(self,x,y, enemy):
-        if enemy['x'] > x and enemy['y'] > y:
-            enemy['x'] += 1
-            enemy['y'] += 1
-        elif enemy['x'] > x and enemy['y'] == y:
-            enemy['x'] += 1
-        
+        if enemy.enemy_location['x'] > x and enemy.enemy_location['y'] > y:
+            enemy.enemy_location['x'] += 1
+            enemy.enemy_location['y'] += 1
+        elif enemy.enemy_location['x'] > x and enemy.enemy_location['y'] == y:
+            enemy.enemy_location['x'] += 1
+        elif enemy.enemy_location['x'] > x and enemy.enemy_location['y'] < y:
+            enemy.enemy_location['x'] += 1
+            enemy.enemy_location['y'] -= 1
+        elif enemy.enemy_location['x'] == x and enemy.enemy_location['y'] < y:
+            enemy.enemy_location['y'] -= 1
+        elif enemy.enemy_location['x'] < x and enemy.enemy_location['y'] < y:
+            enemy.enemy_location['x'] -= 1
+            enemy.enemy_location['y'] -= 1
+        elif enemy.enemy_location['x'] < x and enemy.enemy_location['y'] == y:
+            enemy.enemy_location['x'] -= 1
+        elif enemy.enemy_location['x'] < x and enemy.enemy_location['y'] > y:
+            enemy.enemy_location['x'] -= 1
+            enemy.enemy_location['y'] += 1
+        elif enemy.enemy_location['x'] == x and enemy.enemy_location['y'] > y:
+            enemy.enemy_location['y'] += 1 
+           
     def check_enemy_collision(self, enemy_manager):
     # Check if the player has collided with an enemy and update health/score accordingly
-        for enemy in enemy_manager.enemy_locations:
-            if enemy['x'] == self.player_data['Player_Start']['x'] and enemy['y'] == self.player_data['Player_Start']['y']:
+        for enemy in list_o_enemies:
+            if enemy.enemy_location['x'] == self.player_data['Player_Start']['x'] and enemy.enemy_location['y'] == self.player_data['Player_Start']['y']:
                 if self.player_data['Damage_Reduction_Unlocked']:
                     self.player_data["Player_Health"] -= 0.5  # Reduce damage by half if damage reduction is unlocked
                 else:
@@ -202,36 +216,18 @@ class Player():
                 return True  # Collision occurred
         return False  # No collision
 
-    def reduce_moves(self):
-        if self.player_data['Player_Score'] in range(0,200):
-            self.moves_allowed -= 2
-        elif self.player_data['Player_Score'] in range(200,400):
-            self.moves_allowed -= 6
-        elif self.player_data['Player_Score'] in range(400,600):
-            self.moves_allowed -= 18
-        elif self.player_data['Player_Score'] > 600:
-            self.player_data -= 25
-        
-
-    def add_moves(self,type):
-        if type == "collect":
-            self.moves_allowed += 10
-        elif type == "enemy":
-            self.moves_allowed += 20
-
     def check_collectible_collision(self,collectible_manager):
         # Check if the player has collided with a collectible and update score accordingly
         for collectible in collectible_manager.collectibles:
             if collectible['x'] == self.player_data['Player_Start']['x'] and collectible['y'] == self.player_data['Player_Start']['y']:
                 self.update_score(20)  # Award points for collecting an item
-                self.add_moves('collect')
                 collectible_manager.collectibles.remove(collectible)
                 collectible_manager.collectible_count -= 1
                 return True  # Collision occurred
         return False  # No collision
 
     def check_game_over(self):
-        if self.player_data["Player_Health"] <= 0 or self.moves_allowed <= 0:
+        if self.player_data["Player_Health"] <= 0:
             return True
         return False
 
@@ -242,46 +238,50 @@ class Player():
         self.spawn_aoe_effect(stdscr, self.player_data["Player_Start"]["x"], self.player_data["Player_Start"]["y"])
         for i in range(self.player_data["Player_Start"]["x"] - 3, self.player_data["Player_Start"]["x"] + 6):
             for j in range(self.player_data["Player_Start"]["y"] - 3, self.player_data["Player_Start"]["y"] + 6):
-                for enemy in enemy_manager.enemy_locations:
-                    if enemy['x'] == i and enemy['y'] == j:
-                        self.spawn_pow_effect(stdscr, enemy['x'], enemy['y'])
-                        enemy_manager.enemy_locations.remove(enemy)
-                        enemy_manager.enemy_count -= 1
+                for enemy in list_o_enemies[:]:
+                    if enemy.enemy_location['x'] == i and enemy.enemy_location['y'] == j:
+                        self.spawn_pow_effect(stdscr, enemy.enemy_location['x'], enemy.enemy_location['y'])
+                        enemy.health -= 1
+                        enemy.stuned = True
+                        if enemy.health <= 0:
+                            list_o_enemies.remove(enemy)
                         self.update_score(10)  # Award points for defeating an enemy
 
 class Enemy():
     def __init__(self, x, y, icon):
         self.enemy_location = {'x':x,'y':y}
         self.icon = icon
+        self.stuned = False
         self.health = 3
     def move_enemies(self, player, game_type):
         # Move each enemy randomly in one of the four directions, ensuring they stay within bounds and downt run into obstacles. This function can be called after the player moves to create a more dynamic game environment.
-        for enemy in self.enemy_locations[:]:  # Iterate over a copy to safely remove items
-            direction = random.choice(['up', 'down', 'left', 'right'])
-            new_x = enemy['x']
-            new_y = enemy['y']
-            if direction == 'up':  # Up
-                new_y -= 1
-            elif direction == 'down':  # Down
-                new_y += 1
-            elif direction == 'left':  # Left
-                new_x -= 1
-            elif direction == 'right':  # Right
-                new_x += 1
+        if self.stuned == True:
+            self.stuned = False
+            return
+        direction = random.choice(['up', 'down', 'left', 'right'])
+        new_x = self.enemy_location['x']
+        new_y = self.enemy_location['y']
+        if direction == 'up':  # Up
+            new_y -= 1
+        elif direction == 'down':  # Down
+            new_y += 1
+        elif direction == 'left':  # Left
+            new_x -= 1
+        elif direction == 'right':  # Right
+            new_x += 1
 
-            # Check if enemy moves into player position
-            if new_x == player.player_data['Player_Start']['x'] and new_y == player.player_data['Player_Start']['y']:
-                if player.player_data['Damage_Reduction_Unlocked']: 
-                    player.player_data['Player_Health'] -= 0.5  # Reduce damage by half if damage reduction is unlocked
-                else:
-                
-                    player.player_data['Player_Health'] -= 1
-                list_o_enemies.remove(enemy)
-                self.enemy_count -= 1
-            # Check for boundaries and obstacles
-            elif not check_obstacle_collision(new_x, new_y, game_type, interacter=self) and not self.check_enemy_on_enemy(new_x, new_y):
-                enemy['x'] = new_x
-                enemy['y'] = new_y
+        # Check if enemy moves into player position
+        if new_x == player.player_data['Player_Start']['x'] and new_y == player.player_data['Player_Start']['y']:
+            if player.player_data['Damage_Reduction_Unlocked']: 
+                player.player_data['Player_Health'] -= 0.5  # Reduce damage by half if damage reduction is unlocked
+            else:
+            
+                player.player_data['Player_Health'] -= 1
+            list_o_enemies.remove(self)
+        # Check for boundaries and obstacles
+        elif not check_obstacle_collision(new_x, new_y, game_type, interacter=self) and not self.check_enemy_on_enemy(new_x, new_y):
+            self.enemy_location['x'] = new_x
+            self.enemy_location['y'] = new_y
     
     
     def check_enemy_on_enemy(self, x, y):
@@ -302,7 +302,7 @@ class Collectible():
         # Spawn a collectible at a random position that is not an obstacle or enemy
         x = random.randint(0, game_type.game_data["Board_Width"] - 1)
         y = random.randint(0, game_type.game_data["Board_Height"] - 1)
-        if not check_obstacle_collision(x, y, game_type) and not enemy_manager.check_enemy_on_enemy(x, y):
+        if not check_obstacle_collision(x, y, game_type) and not check_enemy_position(x, y):
             self.collectibles.append({'x': x, 'y': y, 'icon': game_type.game_data['ruppee']})
             self.collectible_count += 1
 
@@ -378,8 +378,9 @@ def play_game(stdscr,game_type,player,enemy_manager,collectible_manager,shop_man
                 break
             
             player.move_player(key.lower(), enemy_manager, collectible_manager, game_type, shop_manager, stdscr)
-            enemy_manager.move_enemies(player,game_type)
-            enemy_manager.spawn_enemy(game_type)
+            for enemy in list_o_enemies:
+                enemy.move_enemies(player,game_type)
+            spawn_enemy(game_type)
             collectible_manager.spawn_collectible(game_type,enemy_manager)
             game_type.draw_board(stdscr, enemy_manager, collectible_manager,player,shop_manager)
         while True:
@@ -415,6 +416,13 @@ def welcome_player(stdscr):
         stdscr.refresh()
         stdscr.getch()  # Wait for player to press a key
 
+def check_enemy_position(x, y):
+    # Check if the position (x, y) is occupied by an enemy
+    for enemy in list_o_enemies:
+        if enemy.enemy_location['x'] == x and enemy.enemy_location['y'] == y:
+            return True
+    return False
+
 def check_obstacle_collision(x, y, game, interacter=None):
     # Check if the position (x, y) is out of bounds or occupied by an obstacle
     if x < 0 or x >= game.game_data["Board_Width"] or y < 0 or y >= game.game_data["Board_Height"]:
@@ -441,7 +449,7 @@ def spawn_enemy(game_type):
         # Spawn an enemy at a random position that is not an obstacle
         x = random.randint(0, game_type.game_data["Board_Width"] - 1)
         y = random.randint(0, game_type.game_data["Board_Height"] - 1)
-        if not check_obstacle_collision(x, y, game_type) and not enemy_manager.check_enemy_on_enemy(x, y):
+        if not check_obstacle_collision(x, y, game_type) and not check_enemy_position(x, y):
             random_enemy_icon = random.choice([game_type.game_data['skeleton'], game_type.game_data['zombie']])
             monster = Enemy(x,y,random_enemy_icon)
             list_o_enemies.append(monster)   

@@ -82,8 +82,8 @@ class Game():
             self.game_data['Obstacle_data'].append({'x': x, 'y': y, 'icon': obstacle_icon}) # 🌵
 
 class Player(): 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
+        self.name = input("Enter your name: ")
         self.player_data = {       
             'Player_Start' : {'x' : 2,'y' : 10},
             'Weapon_Start' : {'x' : 3, 'y' : 10},
@@ -423,20 +423,8 @@ def check_obstacle_collision(x, y, game, interacter=None):
             return True
     return False
 
-class Zombie(Enemy):
-    def __init__(self):
-        super().__init__()
-        self.enemy_data = {
-            "enemy_types": ["zombie"],
-            "enemy_locations": [
-                {'x': 5, 'y': 5, 'icon': "\U0001F9DF",'hp': 3}, # 🧟
-                {'x': 15, 'y': 15, 'icon': "\U0001F9DF",'hp': 3}] # 🧟
-        }
-        self.enemy_locations = self.enemy_data["enemy_locations"]
-
-zombie_manager = Zombie()
 shop_manager = Shop()
-player_one = Player(input("Enter your name, brave adventurer: "))
+player_one = Player()
 adventure_game = Game()
 enemy_manager = Enemy()
 collectible_manager = Collectible()
